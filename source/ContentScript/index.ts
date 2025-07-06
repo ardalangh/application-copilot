@@ -166,9 +166,14 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         </div>
       </div>
       <div style="display: flex; gap: 8px; margin: 18px 18px 0 18px;">
-        <button style="flex:1; background: #e6f7fa; color: #00b6e6; border: none; border-radius: 6px 6px 0 0; padding: 8px 0; font-weight: 600; cursor: pointer;">Autofill</button>
-        <button style="flex:1; background: #f5f5f5; color: #bdbdbd; border: none; border-radius: 6px 6px 0 0; padding: 8px 0; font-weight: 600; cursor: pointer;">Profile</button>
+        <button id="hiair-tab-autofill" style="flex:1; background: #e6f7fa; color: #00b6e6; border: none; border-radius: 6px 6px 0 0; padding: 8px 0; font-weight: 600; cursor: pointer;">Autofill</button>
+        <button id="hiair-tab-profile" style="flex:1; background: #f5f5f5; color: #bdbdbd; border: none; border-radius: 6px 6px 0 0; padding: 8px 0; font-weight: 600; cursor: pointer;">Profile</button>
       </div>
+      <div id="hiair-sidebar-content"></div>
+    `;
+
+    // Autofill and Profile content
+    const autofillContent = `
       <div style="background: #00b6e6; color: #fff; border-radius: 10px; margin: 18px; padding: 18px 16px 16px 16px; display: flex; flex-direction: column; align-items: flex-start;">      
         <button style="background: #fff; color: #00b6e6; border: none; border-radius: 6px; padding: 8px 18px; font-weight: 600; font-size: 15px; cursor: pointer;">⚡ Autofill</button>
       </div>
@@ -185,6 +190,353 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         </div>
       </div>
     `;
+
+    function getProfileFormHTML(profile: any, message: string): string {
+      // Helper to render education entries
+      function renderEducation(education: any[]) {
+        return education.map((edu: any, idx: number) => `
+          <div class="dynamic-entry" data-id="${edu.id}">
+            ${education.length > 1 ? `<button type="button" class="remove-edu-btn" style="float:right; color:#e57373; background:none; border:none; font-size:18px; cursor:pointer;">×</button>` : ''}
+            <div class="dynamic-heading">Education ${idx + 1}</div>
+            <label>University/Institution<br/>
+              <input name="university-${edu.id}" type="text" value="${edu.university || ''}" />
+            </label>
+            <label>Degree Type<br/>
+              <select name="degreeType-${edu.id}">
+                <option value="">Select degree type</option>
+                <option value="Associate"${edu.degreeType==='Associate'?' selected':''}>Associate</option>
+                <option value="Bachelor"${edu.degreeType==='Bachelor'?' selected':''}>Bachelor</option>
+                <option value="Master"${edu.degreeType==='Master'?' selected':''}>Master</option>
+                <option value="PhD"${edu.degreeType==='PhD'?' selected':''}>PhD</option>
+                <option value="Other"${edu.degreeType==='Other'?' selected':''}>Other</option>
+              </select>
+            </label>
+            <label>Field of Study<br/>
+              <input name="degreeField-${edu.id}" type="text" value="${edu.degreeField || ''}" />
+            </label>
+            <div class="row-fields">
+              <label>Start Date<br/>
+                <input name="startDate-${edu.id}" type="date" value="${edu.startDate || ''}" />
+              </label>
+              <label>End Date<br/>
+                <input name="endDate-${edu.id}" type="date" value="${edu.endDate || ''}" />
+              </label>
+            </div>
+          </div>
+        `).join('');
+      }
+      // Helper to render work experience entries
+      function renderWork(workExperience: any[]) {
+        return workExperience.map((work: any, idx: number) => `
+          <div class="dynamic-entry" data-id="${work.id}">
+            ${workExperience.length > 1 ? `<button type="button" class="remove-work-btn" style="float:right; color:#e57373; background:none; border:none; font-size:18px; cursor:pointer;">×</button>` : ''}
+            <div class="dynamic-heading">Experience ${idx + 1}</div>
+            <label>Job Title<br/>
+              <input name="jobTitle-${work.id}" type="text" value="${work.jobTitle || ''}" />
+            </label>
+            <label>Company Name<br/>
+              <input name="companyName-${work.id}" type="text" value="${work.companyName || ''}" />
+            </label>
+            <div class="row-fields">
+              <label>Start Date<br/>
+                <input name="workStartDate-${work.id}" type="date" value="${work.startDate || ''}" />
+              </label>
+              <label>End Date<br/>
+                <input name="workEndDate-${work.id}" type="date" value="${work.endDate || ''}" />
+              </label>
+            </div>
+            <label>Work Location<br/>
+              <select name="workLocation-${work.id}">
+                <option value="">Select work location</option>
+                <option value="Remote"${work.workLocation==='Remote'?' selected':''}>Remote</option>
+                <option value="On-site"${work.workLocation==='On-site'?' selected':''}>On-site</option>
+                <option value="Hybrid"${work.workLocation==='Hybrid'?' selected':''}>Hybrid</option>
+              </select>
+            </label>
+            <label>Job Description/Bullet Points<br/>
+              <textarea name="jobDescription-${work.id}" rows="2">${work.jobDescription || ''}</textarea>
+            </label>
+          </div>
+        `).join('');
+      }
+      // Accordion section helper
+      function accordionSection(title: string, content: string, open: boolean, idx: number) {
+        return `
+          <div class="hiair-accordion-section${open ? ' open' : ''}" data-idx="${idx}">
+            <button type="button" class="hiair-accordion-header">${title}<span class="hiair-accordion-arrow">${open ? '▲' : '▼'}</span></button>
+            <div class="hiair-accordion-content" style="display:${open ? 'block' : 'none'};">${content}</div>
+          </div>
+        `;
+      }
+      // Accordion content for each section
+      const sections = [
+        {
+          title: 'Personal Information',
+          content: `
+            <label>Name*<br/><input name="name" type="text" value="${profile.name || ''}" required style="width:100%;padding:6px;" /></label>
+            <label>Contact Info<br/><input name="contactInfo" type="text" value="${profile.contactInfo || ''}" style="width:100%;padding:6px;" /></label>
+            <label>Portfolio<br/><input name="portfolio" type="url" value="${profile.portfolio || ''}" style="width:100%;padding:6px;" /></label>
+            <label>LinkedIn URL<br/><input name="linkedInUrl" type="url" value="${profile.linkedInUrl || ''}" style="width:100%;padding:6px;" /></label>
+            <label>GitHub URL<br/><input name="githubUrl" type="url" value="${profile.githubUrl || ''}" style="width:100%;padding:6px;" /></label>
+            <label>Other URL<br/><input name="otherUrl" type="url" value="${profile.otherUrl || ''}" style="width:100%;padding:6px;" /></label>
+            <label>Other Personal Details<br/><textarea name="personalDetails" rows="2" style="width:100%;padding:6px;">${profile.personalDetails || ''}</textarea></label>
+          `
+        },
+        {
+          title: 'Education',
+          content: `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-weight:600;">Education</span>
+              <button type="button" id="add-edu-btn" style="background:#e6f7fa;color:#00b6e6;border:none;border-radius:4px;padding:4px 10px;font-weight:600;cursor:pointer;">+ Add</button>
+            </div>
+            <div id="education-list">${renderEducation(profile.education)}</div>
+          `
+        },
+        {
+          title: 'Work Experience',
+          content: `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-weight:600;">Work Experience</span>
+              <button type="button" id="add-work-btn" style="background:#e6f7fa;color:#00b6e6;border:none;border-radius:4px;padding:4px 10px;font-weight:600;cursor:pointer;">+ Add</button>
+            </div>
+            <div id="work-list">${renderWork(profile.workExperience)}</div>
+          `
+        },
+        {
+          title: 'Projects',
+          content: `<label>Projects<br/><textarea name="projects" rows="2" style="width:100%;padding:6px;">${profile.projects || ''}</textarea></label>`
+        },
+        {
+          title: 'Skills',
+          content: `<label>Skills<br/><textarea name="skills" rows="2" style="width:100%;padding:6px;">${profile.skills || ''}</textarea></label>`
+        },
+        {
+          title: 'Other/Personal Details',
+          content: `
+            <label>Gender<br/><select name="gender" style="width:100%;padding:6px;">
+              <option value="">Select gender</option>
+              <option value="Male"${profile.gender==='Male'?' selected':''}>Male</option>
+              <option value="Female"${profile.gender==='Female'?' selected':''}>Female</option>
+              <option value="Non-binary"${profile.gender==='Non-binary'?' selected':''}>Non-binary</option>
+              <option value="Prefer not to say"${profile.gender==='Prefer not to say'?' selected':''}>Prefer not to say</option>
+            </select></label>
+            <label>Orientation<br/><input name="orientation" type="text" value="${profile.orientation || ''}" style="width:100%;padding:6px;" /></label>
+            <label>Race/Ethnicity<br/><input name="race" type="text" value="${profile.race || ''}" style="width:100%;padding:6px;" /></label>
+            <label>Relocation Willingness<br/><select name="relocationWillingness" style="width:100%;padding:6px;">
+              <option value="">Select willingness</option>
+              <option value="Yes"${profile.relocationWillingness==='Yes'?' selected':''}>Yes</option>
+              <option value="No"${profile.relocationWillingness==='No'?' selected':''}>No</option>
+              <option value="Maybe"${profile.relocationWillingness==='Maybe'?' selected':''}>Maybe</option>
+            </select></label>
+            <label>Commute Willingness<br/><input name="commuteWillingness" type="text" value="${profile.commuteWillingness || ''}" style="width:100%;padding:6px;" /></label>
+            <label>Veteran Status<br/><select name="veteranStatus" style="width:100%;padding:6px;">
+              <option value="">Select status</option>
+              <option value="Yes"${profile.veteranStatus==='Yes'?' selected':''}>Yes</option>
+              <option value="No"${profile.veteranStatus==='No'?' selected':''}>No</option>
+              <option value="Prefer not to say"${profile.veteranStatus==='Prefer not to say'?' selected':''}>Prefer not to say</option>
+            </select></label>
+            <label>Disability Status<br/><select name="disabilityStatus" style="width:100%;padding:6px;">
+              <option value="">Select status</option>
+              <option value="Yes"${profile.disabilityStatus==='Yes'?' selected':''}>Yes</option>
+              <option value="No"${profile.disabilityStatus==='No'?' selected':''}>No</option>
+              <option value="Prefer not to say"${profile.disabilityStatus==='Prefer not to say'?' selected':''}>Prefer not to say</option>
+            </select></label>
+            <label>Expected Salary<br/><input name="expectedSalary" type="text" value="${profile.expectedSalary || ''}" style="width:100%;padding:6px;" /></label>
+            <label>Sponsorship Requirements<br/><select name="sponsorshipRequirements" style="width:100%;padding:6px;">
+              <option value="">Select requirement</option>
+              <option value="Yes"${profile.sponsorshipRequirements==='Yes'?' selected':''}>Yes</option>
+              <option value="No"${profile.sponsorshipRequirements==='No'?' selected':''}>No</option>
+              <option value="In the future"${profile.sponsorshipRequirements==='In the future'?' selected':''}>In the future</option>
+            </select></label>
+          `
+        }
+      ];
+      // Compose the form with accordions
+      return `
+        <form id="hiair-profile-form" style="padding: 0 0 12px 0; display: flex; flex-direction: column; gap: 0;">
+          <div style="font-size: 18px; font-weight: 600; margin: 18px 18px 8px 18px;">Edit Profile</div>
+          ${message ? `<div style='color: #00b6e6; font-size: 14px; margin: 0 18px 8px 18px;'>${message}</div>` : ''}
+          <div id="hiair-profile-accordion">
+            ${sections.map((s, i) => accordionSection(s.title, s.content, i === 0, i)).join('')}
+          </div>
+          <button type="submit" style="background: #00b6e6; color: #fff; border: none; border-radius: 6px; padding: 10px 0; font-weight: 600; font-size: 15px; cursor: pointer; margin: 18px;">Save Profile</button>
+        </form>
+      `;
+    }
+
+    // Profile tab logic
+    async function renderProfileTab(message: string = ''): Promise<void> {
+      // Default profile structure
+      let profile: any = {
+        name: '', contactInfo: '', portfolio: '', linkedInUrl: '', githubUrl: '', otherUrl: '', resume: '', resumeUploadDate: '', personalDetails: '',
+        education: [{ id: '1', university: '', degreeType: '', degreeField: '', startDate: '', endDate: '' }],
+        workExperience: [{ id: '1', jobTitle: '', companyName: '', startDate: '', endDate: '', workLocation: '', jobDescription: '' }],
+        projects: '', skills: '', gender: '', orientation: '', race: '', relocationWillingness: '', commuteWillingness: '', veteranStatus: '', disabilityStatus: '', expectedSalary: '', sponsorshipRequirements: ''
+      };
+      try {
+        const result = await browser.storage.sync.get('userProfile');
+        if (result.userProfile) {
+          profile = { ...profile, ...result.userProfile };
+          // Ensure arrays are present
+          if (!Array.isArray(profile.education) || profile.education.length === 0) profile.education = [{ id: '1', university: '', degreeType: '', degreeField: '', startDate: '', endDate: '' }];
+          if (!Array.isArray(profile.workExperience) || profile.workExperience.length === 0) profile.workExperience = [{ id: '1', jobTitle: '', companyName: '', startDate: '', endDate: '', workLocation: '', jobDescription: '' }];
+        }
+      } catch {}
+      if (contentDiv) contentDiv.innerHTML = getProfileFormHTML(profile, message);
+      // Accordion logic
+      const accordionHeaders = contentDiv?.querySelectorAll('.hiair-accordion-header');
+      accordionHeaders?.forEach((header, idx) => {
+        header.addEventListener('click', () => {
+          const section = header.parentElement;
+          const isOpen = section?.classList.contains('open');
+          contentDiv?.querySelectorAll('.hiair-accordion-section').forEach((sec, i) => {
+            sec.classList.remove('open');
+            (sec.querySelector('.hiair-accordion-content') as HTMLElement).style.display = 'none';
+            (sec.querySelector('.hiair-accordion-arrow') as HTMLElement).textContent = '▼';
+          });
+          if (!isOpen) {
+            section?.classList.add('open');
+            (section?.querySelector('.hiair-accordion-content') as HTMLElement).style.display = 'block';
+            (section?.querySelector('.hiair-accordion-arrow') as HTMLElement).textContent = '▲';
+          }
+        });
+      });
+      // Add education entry
+      contentDiv?.querySelector('#add-edu-btn')?.addEventListener('click', () => {
+        profile.education.push({ id: Date.now().toString(), university: '', degreeType: '', degreeField: '', startDate: '', endDate: '' });
+        renderProfileTab();
+      });
+      // Remove education entry
+      contentDiv?.querySelectorAll('.remove-edu-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const entry = (btn.closest('.dynamic-entry') as HTMLElement);
+          const id = entry?.getAttribute('data-id');
+          profile.education = profile.education.filter((edu: any) => edu.id !== id);
+          renderProfileTab();
+        });
+      });
+      // Add work experience entry
+      contentDiv?.querySelector('#add-work-btn')?.addEventListener('click', () => {
+        profile.workExperience.push({ id: Date.now().toString(), jobTitle: '', companyName: '', startDate: '', endDate: '', workLocation: '', jobDescription: '' });
+        renderProfileTab();
+      });
+      // Remove work experience entry
+      contentDiv?.querySelectorAll('.remove-work-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const entry = (btn.closest('.dynamic-entry') as HTMLElement);
+          const id = entry?.getAttribute('data-id');
+          profile.workExperience = profile.workExperience.filter((work: any) => work.id !== id);
+          renderProfileTab();
+        });
+      });
+      // Save form
+      const form = contentDiv?.querySelector('#hiair-profile-form');
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const formData = new FormData(form as HTMLFormElement);
+          // Gather education
+          const newEducation: any[] = [];
+          (profile.education || []).forEach((edu: any) => {
+            newEducation.push({
+              id: edu.id,
+              university: formData.get(`university-${edu.id}`) || '',
+              degreeType: formData.get(`degreeType-${edu.id}`) || '',
+              degreeField: formData.get(`degreeField-${edu.id}`) || '',
+              startDate: formData.get(`startDate-${edu.id}`) || '',
+              endDate: formData.get(`endDate-${edu.id}`) || ''
+            });
+          });
+          // Gather work experience
+          const newWork: any[] = [];
+          (profile.workExperience || []).forEach((work: any) => {
+            newWork.push({
+              id: work.id,
+              jobTitle: formData.get(`jobTitle-${work.id}`) || '',
+              companyName: formData.get(`companyName-${work.id}`) || '',
+              startDate: formData.get(`workStartDate-${work.id}`) || '',
+              endDate: formData.get(`workEndDate-${work.id}`) || '',
+              workLocation: formData.get(`workLocation-${work.id}`) || '',
+              jobDescription: formData.get(`jobDescription-${work.id}`) || ''
+            });
+          });
+          const updatedProfile = {
+            ...profile,
+            name: formData.get('name') || '',
+            contactInfo: formData.get('contactInfo') || '',
+            portfolio: formData.get('portfolio') || '',
+            linkedInUrl: formData.get('linkedInUrl') || '',
+            githubUrl: formData.get('githubUrl') || '',
+            otherUrl: formData.get('otherUrl') || '',
+            personalDetails: formData.get('personalDetails') || '',
+            education: newEducation,
+            workExperience: newWork,
+            projects: formData.get('projects') || '',
+            skills: formData.get('skills') || '',
+            gender: formData.get('gender') || '',
+            orientation: formData.get('orientation') || '',
+            race: formData.get('race') || '',
+            relocationWillingness: formData.get('relocationWillingness') || '',
+            commuteWillingness: formData.get('commuteWillingness') || '',
+            veteranStatus: formData.get('veteranStatus') || '',
+            disabilityStatus: formData.get('disabilityStatus') || '',
+            expectedSalary: formData.get('expectedSalary') || '',
+            sponsorshipRequirements: formData.get('sponsorshipRequirements') || ''
+          };
+          try {
+            const prev = await browser.storage.sync.get('userProfile');
+            await browser.storage.sync.set({ userProfile: { ...prev.userProfile, ...updatedProfile } });
+            renderProfileTab('Profile saved!');
+          } catch {
+            renderProfileTab('Error saving profile.');
+          }
+        });
+      }
+      // Minimal sidebar accordion CSS
+      const styleId = 'hiair-profile-accordion-style';
+      if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+          .hiair-accordion-section { border-bottom: 1px solid #ececec; }
+          .hiair-accordion-header { width: 100%; background: none; border: none; outline: none; text-align: left; font-size: 16px; font-weight: 600; padding: 14px 18px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+          .hiair-accordion-arrow { font-size: 14px; margin-left: 8px; }
+          .hiair-accordion-content { padding: 0 18px 18px 18px; }
+          .dynamic-entry { background: #fff !important; border-radius: 12px !important; margin-bottom: 24px !important; padding: 22px 18px 14px 18px !important; position: relative !important; border: 1px solid #e0e0e0 !important; box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important; }
+          .dynamic-entry .dynamic-heading { font-size: 18px !important; font-weight: 700 !important; margin-bottom: 18px !important; color: #222 !important; letter-spacing: -0.5px !important; }
+          #hiair-profile-form label { display: flex !important; flex-direction: column !important; margin-bottom: 20px !important; font-size: 14px !important; font-weight: 500 !important; color: #222 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important; }
+          #hiair-profile-form input, #hiair-profile-form select, #hiair-profile-form textarea { font-size: 15px !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important; margin-top: 6px !important; margin-bottom: 0 !important; padding: 8px 10px !important; border: 1px solid #bdbdbd !important; border-radius: 8px !important; background: #fff !important; color: #222 !important; box-sizing: border-box !important; transition: border-color 0.2s, box-shadow 0.2s !important; }
+          #hiair-profile-form input:focus, #hiair-profile-form select:focus, #hiair-profile-form textarea:focus { outline: none !important; border-color: #00b6e6 !important; box-shadow: 0 0 0 2px #00b6e633 !important; }
+          .dynamic-entry .row-fields { display: flex !important; gap: 16px !important; }
+          .dynamic-entry .row-fields > label { flex: 1 1 0 !important; margin-bottom: 0 !important; }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+
+    // Set initial content
+    const contentDiv = sidebar.querySelector('#hiair-sidebar-content');
+    if (contentDiv) contentDiv.innerHTML = autofillContent;
+
+    // Tab switching logic
+    const autofillTab = sidebar.querySelector('#hiair-tab-autofill') as HTMLButtonElement;
+    const profileTab = sidebar.querySelector('#hiair-tab-profile') as HTMLButtonElement;
+    if (autofillTab && profileTab && contentDiv) {
+      autofillTab.addEventListener('click', () => {
+        autofillTab.style.background = '#e6f7fa';
+        autofillTab.style.color = '#00b6e6';
+        profileTab.style.background = '#f5f5f5';
+        profileTab.style.color = '#bdbdbd';
+        contentDiv.innerHTML = autofillContent;
+      });
+      profileTab.addEventListener('click', () => {
+        profileTab.style.background = '#e6f7fa';
+        profileTab.style.color = '#00b6e6';
+        autofillTab.style.background = '#f5f5f5';
+        autofillTab.style.color = '#bdbdbd';
+        renderProfileTab();
+      });
+    }
 
     // Sidebar close button
     sidebar.querySelector('#hiair-sidebar-close')?.addEventListener('click', () => {
