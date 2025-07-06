@@ -168,6 +168,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
       <div style="display: flex; gap: 8px; margin: 18px 18px 0 18px;">
         <button id="hiair-tab-autofill" style="flex:1; background: #e6f7fa; color: #00b6e6; border: none; border-radius: 6px 6px 0 0; padding: 8px 0; font-weight: 600; cursor: pointer;">Autofill</button>
         <button id="hiair-tab-profile" style="flex:1; background: #f5f5f5; color: #bdbdbd; border: none; border-radius: 6px 6px 0 0; padding: 8px 0; font-weight: 600; cursor: pointer;">Profile</button>
+        <button id="hiair-tab-apikeys" style="flex:1; background: #f5f5f5; color: #bdbdbd; border: none; border-radius: 6px 6px 0 0; padding: 8px 0; font-weight: 600; cursor: pointer;">API Keys</button>
       </div>
       <div id="hiair-sidebar-content"></div>
     `;
@@ -514,6 +515,68 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
       }
     }
 
+    // API Keys tab logic
+    async function renderApiKeysTab(message = '') {
+      let apiKeys = { openai: '', anthropic: '' };
+      try {
+        const result = await browser.storage.sync.get('apiKeys');
+        if (result.apiKeys) apiKeys = result.apiKeys;
+      } catch {}
+      const openaiLogo = browser.runtime.getURL('assets/icons/openailogo.png');
+      const anthropicLogo = browser.runtime.getURL('assets/icons/anthropiclogo.png');
+      if (contentDiv) contentDiv.innerHTML = `
+        <form id="hiair-apikeys-form" style="padding: 18px; display: flex; flex-direction: column; gap: 24px;">
+          <div style="font-size: 22px; font-weight: 700; margin-bottom: 8px;">API Keys</div>
+          ${message ? `<div style='color: #00b6e6; font-size: 14px; margin-bottom: 8px;'>${message}</div>` : ''}
+          <label style="font-size: 14px; font-weight: 500; color: #222;">
+            <span style="margin-bottom: 8px; display: block;">OpenAI API Key</span>
+            <div class="apikey-input-row">
+              <img src="${openaiLogo}" alt="OpenAI Logo" class="apikey-logo" />
+              <input name="openai" type="text" value="${apiKeys.openai || ''}" style="width: 100%;" />
+            </div>
+          </label>
+          <label style="font-size: 14px; font-weight: 500; color: #222;">
+            <span style="margin-bottom: 8px; display: block;">Anthropic API Key</span>
+            <div class="apikey-input-row">
+              <img src="${anthropicLogo}" alt="Anthropic Logo" class="apikey-logo" />
+              <input name="anthropic" type="text" value="${apiKeys.anthropic || ''}" style="width: 100%;" />
+            </div>
+          </label>
+          <button type="submit" style="background: #00b6e6; color: #fff; border: none; border-radius: 6px; padding: 10px 0; font-weight: 600; font-size: 15px; cursor: pointer; margin-top: 8px;">Save API Keys</button>
+        </form>
+      `;
+      const form = contentDiv?.querySelector('#hiair-apikeys-form');
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const formData = new FormData(form as HTMLFormElement);
+          const updatedKeys = {
+            openai: formData.get('openai') || '',
+            anthropic: formData.get('anthropic') || ''
+          };
+          try {
+            await browser.storage.sync.set({ apiKeys: updatedKeys });
+            renderApiKeysTab('API keys saved!');
+          } catch {
+            renderApiKeysTab('Error saving API keys.');
+          }
+        });
+      }
+      // Inject API key input row CSS if not present
+      const apikeyStyleId = 'hiair-apikeys-style';
+      if (!document.getElementById(apikeyStyleId)) {
+        const style = document.createElement('style');
+        style.id = apikeyStyleId;
+        style.textContent = `
+          .apikey-input-row { display: flex; align-items: center; gap: 10px; background: #f8fafd; border-radius: 8px; padding: 0 10px; border: 1px solid #e0e0e0; }
+          .apikey-input-row input { border: none !important; background: transparent !important; box-shadow: none !important; padding: 12px 0 12px 0 !important; font-size: 15px !important; color: #222 !important; width: 100% !important; }
+          .apikey-input-row input:focus { outline: none !important; border: none !important; background: transparent !important; }
+          .apikey-logo { width: 24px; height: 24px; display: block; }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+
     // Set initial content
     const contentDiv = sidebar.querySelector('#hiair-sidebar-content');
     if (contentDiv) contentDiv.innerHTML = autofillContent;
@@ -521,12 +584,15 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
     // Tab switching logic
     const autofillTab = sidebar.querySelector('#hiair-tab-autofill') as HTMLButtonElement;
     const profileTab = sidebar.querySelector('#hiair-tab-profile') as HTMLButtonElement;
-    if (autofillTab && profileTab && contentDiv) {
+    const apiKeysTab = sidebar.querySelector('#hiair-tab-apikeys') as HTMLButtonElement;
+    if (autofillTab && profileTab && apiKeysTab && contentDiv) {
       autofillTab.addEventListener('click', () => {
         autofillTab.style.background = '#e6f7fa';
         autofillTab.style.color = '#00b6e6';
         profileTab.style.background = '#f5f5f5';
         profileTab.style.color = '#bdbdbd';
+        apiKeysTab.style.background = '#f5f5f5';
+        apiKeysTab.style.color = '#bdbdbd';
         contentDiv.innerHTML = autofillContent;
       });
       profileTab.addEventListener('click', () => {
@@ -534,7 +600,18 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         profileTab.style.color = '#00b6e6';
         autofillTab.style.background = '#f5f5f5';
         autofillTab.style.color = '#bdbdbd';
+        apiKeysTab.style.background = '#f5f5f5';
+        apiKeysTab.style.color = '#bdbdbd';
         renderProfileTab();
+      });
+      apiKeysTab.addEventListener('click', () => {
+        apiKeysTab.style.background = '#e6f7fa';
+        apiKeysTab.style.color = '#00b6e6';
+        autofillTab.style.background = '#f5f5f5';
+        autofillTab.style.color = '#bdbdbd';
+        profileTab.style.background = '#f5f5f5';
+        profileTab.style.color = '#bdbdbd';
+        renderApiKeysTab();
       });
     }
 
