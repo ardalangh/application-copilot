@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<glyph name="Ecaron" format="1">
+  <advance width="722"/>
+  <unicode hex="011A"/>
+  <outline>
+    <contour>
+      <point x="589" y="885" type="line"/>
+      <point x="450" y="740" type="line"/>
+      <point x="322" y="740" type="line"/>
+      <point x="183" y="885" type="line"/>
+      <point x="311" y="885" type="line"/>
+      <point x="385" y="808" type="line"/>
+      <point x="459" y="885" type="line"/>
+    </contour>
+    <contour>
+      <point x="676" y="0" type="line"/>
+      <point x="74" y="0" type="line"/>
+      <point x="74" y="688" type="line"/>
+      <point x="669" y="688" type="line"/>
+      <point x="669" y="523" type="line"/>
+      <point x="295" y="523" type="line"/>
+      <point x="295" y="428" type="line"/>
+      <point x="615" y="428" type="line"/>
+      <point x="615" y="270" type="line"/>
+      <point x="295" y="270" type="line"/>
+      <point x="295" y="165" type="line"/>
+      <point x="676" y="165" type="line"/>
+    </contour>
+  </outline>
+  <lib>
+    <dict>
+      <key>com.fontlab.hintData</key>
+      <dict>
+	<key>hhints</key>
+	<array>
+	  <dict>
+	    <key>position</key>	    <integer>0</integer>
+	    <key>width</key>	    <integer>165</integer>
+	  </dict>
+	  <dict>
+	    <key>position</key>	    <integer>270</integer>
+	    <key>width</key>	    <integer>158</integer>
+	  </dict>
+	  <dict>
+	    <key>position</key>	    <integer>523</integer>
+	    <key>width</key>	    <integer>165</integer>
+	  </dict>
+	  <dict>
+	    <key>position</key>	    <integer>740</integer>
+	    <key>width</key>	    <integer>145</integer>
+	  </dict>
+	</array>
+	<key>vhints</key>
+	<array>
+	  <dict>
+	    <key>position</key>
+	    <integer>74</integer>
+	    <key>width</key>
+	    <integer>221</integer>
+	  </dict>
+	</array>
+      </dict>
+    </dict>
+  </lib>
+</glyph>

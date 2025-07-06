@@ -273,7 +273,7 @@ const Popup: React.FC = () => {
 
   return (
     <section id="popup">
-      <h2>User Profile</h2>
+      <div className="hiair-header">Hiair</div>
 
       {message && (
         <div className={`message ${message.includes('Error') ? 'error' : 'success'}`}>

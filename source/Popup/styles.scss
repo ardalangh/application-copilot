@@ -245,6 +245,7 @@ body {
 
 // Accordion styles
 .accordion-section {
+  min-width: 500px;
   margin-bottom: 18px;
   border-radius: 8px;
   background: #fff;
@@ -302,4 +303,72 @@ body {
   background: #f8f9fa;
   padding: 2px;
   border: 1px solid #e9ecef;
+}
+
+.hiair-header {
+  font-family: 'Archicoco', cursive, sans-serif;
+  font-size: 2.5rem;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 18px;
+  letter-spacing: 0.04em;
+  color: #222;
+}
+
+.user-profile-form .form-section, .accordion-section {
+  background-color: #f7fafc !important;
+  /* subtle light background for section distinction */
+}
+
+.user-profile-form .form-group {
+  margin-bottom: 28px !important; /* more space between fields */
+}
+
+.user-profile-form .form-group input,
+.user-profile-form .form-group textarea,
+.user-profile-form .form-group select {
+  width: 100%;
+  padding: 16px 16px !important; /* bigger padding for larger input */
+  font-size: 1.1rem !important;
+  border-radius: 6px !important;
+  background-color: #eef2f7 !important; /* subtle background for input */
+  border: 1.5px solid #cfd8dc !important;
+  margin-bottom: 0 !important;
+  margin-top: 0 !important;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.user-profile-form .form-group input:focus,
+.user-profile-form .form-group textarea:focus,
+.user-profile-form .form-group select:focus {
+  border-color: #1976d2 !important;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.12) !important;
+  background-color: #e3eafc !important;
+}
+
+.user-profile-form .form-group label {
+  font-size: 1.05rem !important;
+  margin-bottom: 8px !important;
+  color: #263238 !important;
+}
+
+// Make dynamic-entry fields also stand out
+.dynamic-entry {
+  background: #f7fafc !important;
+}
+
+// Responsive: ensure min-width doesn't break on mobile
+@media (max-width: 600px) {
+  .accordion-section {
+    min-width: 100% !important;
+    padding: 0 !important;
+  }
+  .user-profile-form .form-group input,
+  .user-profile-form .form-group textarea,
+  .user-profile-form .form-group select {
+    font-size: 1rem !important;
+    padding: 12px 10px !important;
+  }
 }
