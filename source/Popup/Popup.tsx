@@ -704,7 +704,7 @@ const Popup: React.FC = () => {
           <form onSubmit={handleApiKeysSave} className="api-keys-form">
             <div className="form-group api-key-group">
               <img src={
-                browser.runtime.getURL('openailogo.png')
+                browser.runtime.getURL('/assets/icons/openailogo.png')
               } alt="OpenAI Logo" className="api-logo" />
               <input
                 type="password"
@@ -717,7 +717,7 @@ const Popup: React.FC = () => {
             </div>
             <div className="form-group api-key-group">
               <img src={
-                browser.runtime.getURL('anthropiclogo.png')
+                browser.runtime.getURL('/assets/icons/anthropiclogo.png')
               } alt="Anthropic Logo" className="api-logo" />
               <input
                 type="password"

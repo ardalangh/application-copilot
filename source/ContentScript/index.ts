@@ -1,3 +1,6 @@
+import {browser} from 'webextension-polyfill-ts';
+
+
 // Floating button and sidebar logic for Hiair extension
 function createHiairFloatingButton() {
   if (document.getElementById('hiair-floating-btn')) return;
@@ -25,12 +28,7 @@ function createHiairFloatingButton() {
 
   // Icon image
   const icon = document.createElement('img');
-  const chromeObj = typeof window !== 'undefined' ? (window as any).chrome : undefined;
-  if (chromeObj && chromeObj.runtime && chromeObj.runtime.getURL) {
-    icon.src = chromeObj.runtime.getURL('source/assets/icons/favicon-128.png');
-  } else {
-    icon.src = '/source/assets/icons/favicon-128.png';
-  }
+  icon.src = browser.runtime.getURL('assets/icons/favicon-128.png');
   icon.alt = 'Hiair';
   icon.style.cssText = 'width: 32px; height: 32px; pointer-events: none;';
   btn.appendChild(icon);
@@ -127,13 +125,8 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
   if (document.getElementById('hiair-sidebar')) return;
 
   // Font loading logic (same as before)
-  let fontUrl = '';
-  const chromeObj = typeof window !== 'undefined' ? (window as any).chrome : undefined;
-  if (chromeObj && chromeObj.runtime && chromeObj.runtime.getURL) {
-    fontUrl = chromeObj.runtime.getURL('source/assets/fonts/Archicoco/Archicoco.otf');
-  } else {
-    fontUrl = '/source/assets/fonts/Archicoco/Archicoco.otf';
-  }
+  let fontUrl = browser.runtime.getURL('/assets/fonts/Archicoco/Archicoco.otf');
+
   const fontFace = new FontFace('Archicoco', `url('${fontUrl}') format('opentype')`);
 
   fontFace.load().then(function(loadedFace) {
