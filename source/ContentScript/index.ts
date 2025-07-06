@@ -274,13 +274,26 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         {
           title: 'Personal Information',
           content: `
-            <label>Name*<br/><input name="name" type="text" value="${profile.name || ''}" required style="width:100%;padding:6px;" /></label>
+            <div class="profile-names-row">
+              <label>First Name*<br/><input name="firstName" type="text" value="${profile.firstName || ''}" required /></label>
+              <label>Last Name*<br/><input name="lastName" type="text" value="${profile.lastName || ''}" required /></label>
+            </div>
             <label>Contact Info<br/><input name="contactInfo" type="text" value="${profile.contactInfo || ''}" style="width:100%;padding:6px;" /></label>
             <label>Portfolio<br/><input name="portfolio" type="url" value="${profile.portfolio || ''}" style="width:100%;padding:6px;" /></label>
             <label>LinkedIn URL<br/><input name="linkedInUrl" type="url" value="${profile.linkedInUrl || ''}" style="width:100%;padding:6px;" /></label>
             <label>GitHub URL<br/><input name="githubUrl" type="url" value="${profile.githubUrl || ''}" style="width:100%;padding:6px;" /></label>
             <label>Other URL<br/><input name="otherUrl" type="url" value="${profile.otherUrl || ''}" style="width:100%;padding:6px;" /></label>
             <label>Other Personal Details<br/><textarea name="personalDetails" rows="2" style="width:100%;padding:6px;">${profile.personalDetails || ''}</textarea></label>
+          `
+        },
+        {
+          title: 'Resume',
+          content: `
+            <label>Upload Resume (PDF only)<br/>
+              <input name="resume" type="file" accept="application/pdf" style="margin-top:8px;" />
+            </label>
+            ${profile.resumeUploadDate ? `<div style='font-size:13px;color:#888;margin-bottom:8px;'>Uploaded: ${profile.resumeUploadDate}</div>` : ''}
+            ${profile.resume ? `<div style='font-size:13px;color:#00b6e6;margin-bottom:8px;'>PDF file stored.</div>` : ''}
           `
         },
         {
@@ -369,7 +382,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
     async function renderProfileTab(message: string = ''): Promise<void> {
       // Default profile structure
       let profile: any = {
-        name: '', contactInfo: '', portfolio: '', linkedInUrl: '', githubUrl: '', otherUrl: '', resume: '', resumeUploadDate: '', personalDetails: '',
+        firstName: '', lastName: '', contactInfo: '', portfolio: '', linkedInUrl: '', githubUrl: '', otherUrl: '', resume: '', resumeUploadDate: '', personalDetails: '',
         education: [{ id: '1', university: '', degreeType: '', degreeField: '', startDate: '', endDate: '' }],
         workExperience: [{ id: '1', jobTitle: '', companyName: '', startDate: '', endDate: '', workLocation: '', jobDescription: '' }],
         projects: '', skills: '', gender: '', orientation: '', race: '', relocationWillingness: '', commuteWillingness: '', veteranStatus: '', disabilityStatus: '', expectedSalary: '', sponsorshipRequirements: ''
@@ -378,6 +391,12 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         const result = await browser.storage.sync.get('userProfile');
         if (result.userProfile) {
           profile = { ...profile, ...result.userProfile };
+          // Migrate old 'name' field if present
+          if (!profile.firstName && !profile.lastName && profile.name) {
+            const parts = profile.name.split(' ');
+            profile.firstName = parts[0] || '';
+            profile.lastName = parts.slice(1).join(' ') || '';
+          }
           // Ensure arrays are present
           if (!Array.isArray(profile.education) || profile.education.length === 0) profile.education = [{ id: '1', university: '', degreeType: '', degreeField: '', startDate: '', endDate: '' }];
           if (!Array.isArray(profile.workExperience) || profile.workExperience.length === 0) profile.workExperience = [{ id: '1', jobTitle: '', companyName: '', startDate: '', endDate: '', workLocation: '', jobDescription: '' }];
@@ -386,11 +405,11 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
       if (contentDiv) contentDiv.innerHTML = getProfileFormHTML(profile, message);
       // Accordion logic
       const accordionHeaders = contentDiv?.querySelectorAll('.hiair-accordion-header');
-      accordionHeaders?.forEach((header, idx) => {
+      accordionHeaders?.forEach((header) => {
         header.addEventListener('click', () => {
           const section = header.parentElement;
           const isOpen = section?.classList.contains('open');
-          contentDiv?.querySelectorAll('.hiair-accordion-section').forEach((sec, i) => {
+          contentDiv?.querySelectorAll('.hiair-accordion-section').forEach((sec) => {
             sec.classList.remove('open');
             (sec.querySelector('.hiair-accordion-content') as HTMLElement).style.display = 'none';
             (sec.querySelector('.hiair-accordion-arrow') as HTMLElement).textContent = '▼';
@@ -409,7 +428,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
       });
       // Remove education entry
       contentDiv?.querySelectorAll('.remove-edu-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', () => {
           const entry = (btn.closest('.dynamic-entry') as HTMLElement);
           const id = entry?.getAttribute('data-id');
           profile.education = profile.education.filter((edu: any) => edu.id !== id);
@@ -423,7 +442,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
       });
       // Remove work experience entry
       contentDiv?.querySelectorAll('.remove-work-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', () => {
           const entry = (btn.closest('.dynamic-entry') as HTMLElement);
           const id = entry?.getAttribute('data-id');
           profile.workExperience = profile.workExperience.filter((work: any) => work.id !== id);
@@ -461,35 +480,59 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
               jobDescription: formData.get(`jobDescription-${work.id}`) || ''
             });
           });
-          const updatedProfile = {
-            ...profile,
-            name: formData.get('name') || '',
-            contactInfo: formData.get('contactInfo') || '',
-            portfolio: formData.get('portfolio') || '',
-            linkedInUrl: formData.get('linkedInUrl') || '',
-            githubUrl: formData.get('githubUrl') || '',
-            otherUrl: formData.get('otherUrl') || '',
-            personalDetails: formData.get('personalDetails') || '',
-            education: newEducation,
-            workExperience: newWork,
-            projects: formData.get('projects') || '',
-            skills: formData.get('skills') || '',
-            gender: formData.get('gender') || '',
-            orientation: formData.get('orientation') || '',
-            race: formData.get('race') || '',
-            relocationWillingness: formData.get('relocationWillingness') || '',
-            commuteWillingness: formData.get('commuteWillingness') || '',
-            veteranStatus: formData.get('veteranStatus') || '',
-            disabilityStatus: formData.get('disabilityStatus') || '',
-            expectedSalary: formData.get('expectedSalary') || '',
-            sponsorshipRequirements: formData.get('sponsorshipRequirements') || ''
-          };
-          try {
-            const prev = await browser.storage.sync.get('userProfile');
-            await browser.storage.sync.set({ userProfile: { ...prev.userProfile, ...updatedProfile } });
-            renderProfileTab('Profile saved!');
-          } catch {
-            renderProfileTab('Error saving profile.');
+          // Handle resume upload
+          let resume = profile.resume || '';
+          let resumeUploadDate = profile.resumeUploadDate || '';
+          const fileInput = (form.querySelector('input[name="resume"]') as HTMLInputElement);
+          if (fileInput && fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            if (file.type === 'application/pdf') {
+              const reader = new FileReader();
+              reader.onload = async (event) => {
+                resume = event.target?.result as string;
+                resumeUploadDate = new Date().toISOString().split('T')[0];
+                await saveProfile();
+              };
+              reader.readAsDataURL(file);
+              return; // Wait for async file read
+            }
+          }
+          await saveProfile();
+
+          async function saveProfile() {
+            const updatedProfile = {
+              ...profile,
+              firstName: formData.get('firstName') || '',
+              lastName: formData.get('lastName') || '',
+              contactInfo: formData.get('contactInfo') || '',
+              portfolio: formData.get('portfolio') || '',
+              linkedInUrl: formData.get('linkedInUrl') || '',
+              githubUrl: formData.get('githubUrl') || '',
+              otherUrl: formData.get('otherUrl') || '',
+              personalDetails: formData.get('personalDetails') || '',
+              education: newEducation,
+              workExperience: newWork,
+              projects: formData.get('projects') || '',
+              skills: formData.get('skills') || '',
+              gender: formData.get('gender') || '',
+              orientation: formData.get('orientation') || '',
+              race: formData.get('race') || '',
+              relocationWillingness: formData.get('relocationWillingness') || '',
+              commuteWillingness: formData.get('commuteWillingness') || '',
+              veteranStatus: formData.get('veteranStatus') || '',
+              disabilityStatus: formData.get('disabilityStatus') || '',
+              expectedSalary: formData.get('expectedSalary') || '',
+              sponsorshipRequirements: formData.get('sponsorshipRequirements') || '',
+              resume,
+              resumeUploadDate
+            };
+            try {
+              const prev = await browser.storage.sync.get('userProfile');
+              await browser.storage.sync.set({ userProfile: { ...prev.userProfile, ...updatedProfile } });
+              renderProfileTab('Profile saved!');
+            } catch {
+              renderProfileTab('Error saving profile.');
+            }
           }
         });
       }
@@ -510,6 +553,8 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
           #hiair-profile-form input:focus, #hiair-profile-form select:focus, #hiair-profile-form textarea:focus { outline: none !important; border-color: #00b6e6 !important; box-shadow: 0 0 0 2px #00b6e633 !important; }
           .dynamic-entry .row-fields { display: flex !important; gap: 16px !important; }
           .dynamic-entry .row-fields > label { flex: 1 1 0 !important; margin-bottom: 0 !important; }
+          .profile-names-row { display: flex; gap: 16px; }
+          .profile-names-row > label { flex: 1 1 0; min-width: 0; margin-bottom: 0 !important; }
         `;
         document.head.appendChild(style);
       }
