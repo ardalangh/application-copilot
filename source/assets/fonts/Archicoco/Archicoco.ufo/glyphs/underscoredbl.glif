@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<glyph name="underscoredbl" format="1">
+  <advance width="500"/>
+  <unicode hex="2017"/>
+  <outline>
+    <contour>
+      <point x="500" y="-159" type="line"/>
+      <point x="500" y="-221" type="line"/>
+      <point x="0" y="-221" type="line"/>
+      <point x="0" y="-159" type="line"/>
+    </contour>
+    <contour>
+      <point x="501" y="-64" type="line"/>
+      <point x="501" y="-126" type="line"/>
+      <point x="1" y="-126" type="line"/>
+      <point x="1" y="-64" type="line"/>
+    </contour>
+  </outline>
+  <lib>
+    <dict>
+      <key>com.fontlab.hintData</key>
+      <dict>
+	<key>hhints</key>
+	<array>
+	  <dict>
+	    <key>position</key>	    <integer>-221</integer>
+	    <key>width</key>	    <integer>62</integer>
+	  </dict>
+	  <dict>
+	    <key>position</key>	    <integer>-126</integer>
+	    <key>width</key>	    <integer>62</integer>
+	  </dict>
+	</array>
+	<key>vhints</key>
+	<array>
+	  <dict>
+	    <key>position</key>
+	    <integer>0</integer>
+	    <key>width</key>
+	    <integer>501</integer>
+	  </dict>
+	</array>
+      </dict>
+    </dict>
+  </lib>
+</glyph>
