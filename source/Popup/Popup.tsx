@@ -58,6 +58,28 @@ interface UserProfile {
   sponsorshipRequirements: string;
 }
 
+const AccordionSection: React.FC<{
+  title: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}> = ({ title, children, defaultOpen = false }) => {
+  const [open, setOpen] = React.useState(defaultOpen);
+  return (
+    <div className="accordion-section">
+      <button
+        type="button"
+        className="accordion-header"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+      >
+        {title}
+        <span className="accordion-arrow">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && <div className="accordion-content">{children}</div>}
+    </div>
+  );
+};
+
 const Popup: React.FC = () => {
   const [formData, setFormData] = React.useState<UserProfile>({
     name: '',
@@ -102,8 +124,12 @@ const Popup: React.FC = () => {
   const [isLoading, setIsLoading] = React.useState(false);
   const [message, setMessage] = React.useState('');
 
+  const [apiKeys, setApiKeys] = React.useState<{ openai: string; anthropic: string }>({ openai: '', anthropic: '' });
+  const [apiMessage, setApiMessage] = React.useState('');
+
   React.useEffect(() => {
     loadUserProfile();
+    loadApiKeys();
   }, []);
 
   const loadUserProfile = async () => {
@@ -117,6 +143,13 @@ const Popup: React.FC = () => {
     }
   };
 
+  const loadApiKeys = async () => {
+    try {
+      const result = await browser.storage.sync.get('apiKeys');
+      if (result.apiKeys) setApiKeys(result.apiKeys);
+    } catch (e) { /* ignore */ }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -128,7 +161,7 @@ const Popup: React.FC = () => {
   const handleEducationChange = (id: string, field: keyof EducationEntry, value: string) => {
     setFormData(prev => ({
       ...prev,
-      education: prev.education.map(edu => 
+      education: prev.education.map(edu =>
         edu.id === id ? { ...edu, [field]: value } : edu
       )
     }));
@@ -137,7 +170,7 @@ const Popup: React.FC = () => {
   const handleWorkExperienceChange = (id: string, field: keyof WorkExperience, value: string) => {
     setFormData(prev => ({
       ...prev,
-      workExperience: prev.workExperience.map(work => 
+      workExperience: prev.workExperience.map(work =>
         work.id === id ? { ...work, [field]: value } : work
       )
     }));
@@ -204,6 +237,22 @@ const Popup: React.FC = () => {
     }
   };
 
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setApiKeys((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleApiKeysSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await browser.storage.sync.set({ apiKeys });
+      setApiMessage('API keys saved!');
+      setTimeout(() => setApiMessage(''), 2000);
+    } catch {
+      setApiMessage('Error saving API keys.');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -221,52 +270,11 @@ const Popup: React.FC = () => {
     }
   };
 
-  const clearForm = () => {
-    setFormData({
-      name: '',
-      contactInfo: '',
-      portfolio: '',
-      linkedInUrl: '',
-      githubUrl: '',
-      otherUrl: '',
-      resume: '',
-      resumeUploadDate: '',
-      personalDetails: '',
-      education: [{
-        id: '1',
-        university: '',
-        degreeType: '',
-        degreeField: '',
-        startDate: '',
-        endDate: ''
-      }],
-      workExperience: [{
-        id: '1',
-        jobTitle: '',
-        companyName: '',
-        startDate: '',
-        endDate: '',
-        workLocation: '',
-        jobDescription: ''
-      }],
-      projects: '',
-      skills: '',
-      gender: '',
-      orientation: '',
-      race: '',
-      relocationWillingness: '',
-      commuteWillingness: '',
-      veteranStatus: '',
-      disabilityStatus: '',
-      expectedSalary: '',
-      sponsorshipRequirements: ''
-    });
-  };
 
   return (
     <section id="popup">
       <h2>User Profile</h2>
-      
+
       {message && (
         <div className={`message ${message.includes('Error') ? 'error' : 'success'}`}>
           {message}
@@ -274,9 +282,7 @@ const Popup: React.FC = () => {
       )}
 
       <form onSubmit={handleSubmit} className="user-profile-form">
-        <div className="form-section">
-          <h3>Personal Information</h3>
-          
+        <AccordionSection title="Personal Information">
           <div className="form-group">
             <label htmlFor="name">Name *</label>
             <input
@@ -368,9 +374,9 @@ const Popup: React.FC = () => {
               rows={3}
             />
           </div>
-        </div>
+        </AccordionSection>
 
-        <div className="form-section">
+        <AccordionSection title="Education">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
             <h3>Education</h3>
             <button
@@ -381,7 +387,7 @@ const Popup: React.FC = () => {
               + Add Education
             </button>
           </div>
-          
+
           {formData.education.map((edu, index) => (
             <div key={edu.id} className="dynamic-entry">
               {formData.education.length > 1 && (
@@ -393,9 +399,9 @@ const Popup: React.FC = () => {
                   ×
                 </button>
               )}
-              
+
               <h4>Education {index + 1}</h4>
-              
+
               <div className="form-group">
                 <label>University/Institution</label>
                 <input
@@ -450,9 +456,9 @@ const Popup: React.FC = () => {
               </div>
             </div>
           ))}
-        </div>
+        </AccordionSection>
 
-        <div className="form-section">
+        <AccordionSection title="Work Experience">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
             <h3>Work Experience</h3>
             <button
@@ -463,7 +469,7 @@ const Popup: React.FC = () => {
               + Add Experience
             </button>
           </div>
-          
+
           {formData.workExperience.map((work, index) => (
             <div key={work.id} className="dynamic-entry">
               {formData.workExperience.length > 1 && (
@@ -475,9 +481,9 @@ const Popup: React.FC = () => {
                   ×
                 </button>
               )}
-              
+
               <h4>Experience {index + 1}</h4>
-              
+
               <div className="form-group">
                 <label>Job Title</label>
                 <input
@@ -540,11 +546,9 @@ const Popup: React.FC = () => {
               </div>
             </div>
           ))}
-        </div>
+        </AccordionSection>
 
-        <div className="form-section">
-          <h3>Projects</h3>
-          
+        <AccordionSection title="Projects">
           <div className="form-group">
             <label htmlFor="projects">Projects</label>
             <textarea
@@ -556,11 +560,9 @@ const Popup: React.FC = () => {
               placeholder="Describe your projects, technologies used, and outcomes"
             />
           </div>
-        </div>
+        </AccordionSection>
 
-        <div className="form-section">
-          <h3>Skills</h3>
-          
+        <AccordionSection title="Skills">
           <div className="form-group">
             <label htmlFor="skills">Skill Categories/Tags</label>
             <textarea
@@ -572,11 +574,9 @@ const Popup: React.FC = () => {
               placeholder="e.g., JavaScript, React, Node.js, Python, etc."
             />
           </div>
-        </div>
+        </AccordionSection>
 
-        <div className="form-section">
-          <h3>Other/Personal Details</h3>
-          
+        <AccordionSection title="Other/Personal Details">
           <div className="form-group">
             <label htmlFor="gender">Gender</label>
             <select
@@ -698,15 +698,46 @@ const Popup: React.FC = () => {
               <option value="In the future">In the future</option>
             </select>
           </div>
-        </div>
+        </AccordionSection>
+
+        <AccordionSection title={<span>API Keys</span>}>
+          <form onSubmit={handleApiKeysSave} className="api-keys-form">
+            <div className="form-group api-key-group">
+              <img src={
+                browser.runtime.getURL('openailogo.png')
+              } alt="OpenAI Logo" className="api-logo" />
+              <input
+                type="password"
+                name="openai"
+                placeholder="OpenAI API Key"
+                value={apiKeys.openai}
+                onChange={handleApiKeyChange}
+                autoComplete="off"
+              />
+            </div>
+            <div className="form-group api-key-group">
+              <img src={
+                browser.runtime.getURL('anthropiclogo.png')
+              } alt="Anthropic Logo" className="api-logo" />
+              <input
+                type="password"
+                name="anthropic"
+                placeholder="Anthropic API Key"
+                value={apiKeys.anthropic}
+                onChange={handleApiKeyChange}
+                autoComplete="off"
+              />
+            </div>
+            <button type="submit" className="add-button" style={{ marginTop: 8 }}>Save API Keys</button>
+            {apiMessage && <div className="message success">{apiMessage}</div>}
+          </form>
+        </AccordionSection>
 
         <div className="form-actions">
           <button type="submit" disabled={isLoading}>
             {isLoading ? 'Saving...' : 'Save Profile'}
           </button>
-          <button type="button" onClick={clearForm}>
-            Clear Form
-          </button>
+          
         </div>
       </form>
     </section>

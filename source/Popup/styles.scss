@@ -8,11 +8,7 @@ body {
 }
 
 #popup {
-  min-width: 700px;
-  max-width: 800px;
   padding: 20px;
-  max-height: 700px;
-  overflow-y: auto;
 
   h2 {
     font-size: 24px;
@@ -245,4 +241,65 @@ body {
       }
     }
   }
+}
+
+// Accordion styles
+.accordion-section {
+  margin-bottom: 18px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.accordion-header {
+  width: 100%;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+  text-align: left;
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 8px 8px 0 0;
+  transition: background 0.15s;
+}
+.accordion-header:hover {
+  background: #f5f6fa;
+}
+.accordion-arrow {
+  font-size: 16px;
+  margin-left: 8px;
+}
+.accordion-content {
+  padding: 0 16px 16px 16px;
+  animation: fadeInAccordion 0.2s;
+}
+@keyframes fadeInAccordion {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
+// API Keys section
+.api-keys-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.api-key-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.api-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: #f8f9fa;
+  padding: 2px;
+  border: 1px solid #e9ecef;
 }
