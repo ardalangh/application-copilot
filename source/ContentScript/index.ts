@@ -1,5 +1,27 @@
 import {browser} from 'webextension-polyfill-ts';
 
+// Helper method to check if job description is visible on current website
+function JobDescriptionVisible(): boolean {
+  const hostname = window.location.hostname;
+  
+  // Website-specific checks
+  if (hostname.includes('ashbyhq.com')) {
+    return checkAshbyJobDescription();
+  }
+  
+  // Add more websites here as needed
+  // if (hostname.includes('lever.co')) {
+  //   return checkLeverJobDescription();
+  // }
+  
+  return false;
+}
+
+// Check if job description is visible on Ashby
+function checkAshbyJobDescription(): boolean {
+  const jobOverview = document.querySelector('[aria-labelledby="job-overview"]');
+  return jobOverview !== null;
+}
 
 // Floating button and sidebar logic for Hiair extension
 function createHiairFloatingButton() {
@@ -14,7 +36,7 @@ function createHiairFloatingButton() {
     right: 32px;
     width: 56px;
     height: 56px;
-    background: #2dc2e9;
+    background: #000;
     border-radius: 16px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.13);
     z-index: 10000;
@@ -42,7 +64,7 @@ function createHiairFloatingButton() {
     left: -12px;
     width: 28px;
     height: 28px;
-    background: #2dc2e9;
+    background: #000;
     color: #fff;
     border-radius: 50%;
     display: flex;
@@ -176,24 +198,31 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
       <div id="hiair-sidebar-content"></div>
     `;
 
-    // Autofill and Profile content
-    const autofillContent = `
-      <div style="background: #00b6e6; color: #fff; border-radius: 10px; margin: 18px; padding: 18px 16px 16px 16px; display: flex; flex-direction: column; align-items: flex-start;">      
-        <button style="background: #fff; color: #00b6e6; border: none; border-radius: 6px; padding: 8px 18px; font-weight: 600; font-size: 15px; cursor: pointer;">⚡ Autofill</button>
-      </div>
-      <div style="margin: 0 18px 18px 18px; background: #fafbfc; border-radius: 8px; padding: 0;">
-        <div style="display: flex; align-items: center; padding: 14px 0 14px 0; border-bottom: 1px solid #ececec;">
-          <span style="background: #f3e8ff; color: #b39ddb; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin: 0 12px 0 12px; font-size: 18px;">📄</span>
-          <span style="flex:1;">Resume</span>
-          <span style="color: #00b6e6; font-weight: 500; cursor: pointer; margin-right: 16px;">Preview</span>
+    // Generate autofill content based on job description visibility
+    function getAutofillContent(): string {
+      const isJobDescVisible = JobDescriptionVisible();
+      
+      return `
+        <div style="background: #00b6e6; color: #fff; border-radius: 10px; margin: 18px; padding: 18px 16px 16px 16px; display: flex; flex-direction: column; align-items: flex-start;">      
+          <button style="background: #fff; color: #00b6e6; border: none; border-radius: 6px; padding: 8px 18px; font-weight: 600; font-size: 15px; cursor: pointer;">⚡ Autofill</button>
         </div>
-        <div style="display: flex; align-items: center; padding: 14px 0 14px 0; border-bottom: 1px solid #ececec;">
-          <span style="background: #ffe0e0; color: #e57373; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin: 0 12px 0 12px; font-size: 18px;">✏️</span>
-          <span style="flex:1;">Cover Letter</span>
-          <span style="color: #bdbdbd; margin-right: 16px;">No Field Found</span>
+        <div style="margin: 0 18px 18px 18px; background: #fafbfc; border-radius: 8px; padding: 0;">
+          <div style="display: flex; align-items: center; padding: 14px 0 14px 0; border-bottom: 1px solid #ececec;">
+            <span style="background: #f3e8ff; color: #b39ddb; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin: 0 12px 0 12px; font-size: 18px;">📄</span>
+            <span style="flex:1;">Resume</span>
+            <span style="color: #00b6e6; font-weight: 500; cursor: pointer; margin-right: 16px;">Preview</span>
+          </div>
+          <div style="display: flex; align-items: center; padding: 14px 0 14px 0; border-bottom: 1px solid #ececec;">
+            <span style="background: #ffe0e0; color: #e57373; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin: 0 12px 0 12px; font-size: 18px;">✏️</span>
+            <span style="flex:1;">Cover Letter</span>
+            ${isJobDescVisible ? 
+              '<button style="background: #e6f7fa; color: #00b6e6; border: none; border-radius: 4px; padding: 4px 12px; font-weight: 600; cursor: pointer; margin-right: 8px; font-size: 14px;">Generate</button>' : 
+              '<span style="color: #bdbdbd; margin-right: 16px;">No Job Description Found</span>'
+            }
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
 
     function getProfileFormHTML(profile: any, message: string): string {
       // Helper to render education entries
@@ -841,7 +870,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
 
     // Set initial content
     const contentDiv = sidebar.querySelector('#hiair-sidebar-content');
-    if (contentDiv) contentDiv.innerHTML = autofillContent;
+    if (contentDiv) contentDiv.innerHTML = getAutofillContent();
 
     // Tab switching logic
     const autofillTab = sidebar.querySelector('#hiair-tab-autofill') as HTMLButtonElement;
@@ -855,7 +884,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         profileTab.style.color = '#bdbdbd';
         apiKeysTab.style.background = '#f5f5f5';
         apiKeysTab.style.color = '#bdbdbd';
-        contentDiv.innerHTML = autofillContent;
+        contentDiv.innerHTML = getAutofillContent();
         // Remove scroll/height styles if present
         (contentDiv as HTMLElement).style.height = '';
         (contentDiv as HTMLElement).style.overflowY = '';
