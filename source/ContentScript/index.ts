@@ -372,7 +372,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
       return `
         <form id="hiair-profile-form" style="padding: 0 0 12px 0; display: flex; flex-direction: column; gap: 0;">
           <div style="font-size: 18px; font-weight: 600; margin: 18px 18px 8px 18px;">Edit Profile</div>
-          ${message ? `<div style='color: #00b6e6; font-size: 14px; margin: 0 18px 8px 18px;'>${message}</div>` : ''}
+          ${message ? `<div style='color: #00b6e6; font-size: 14px; margin: 0 18px 16px 18px; display: block;'>${message}</div>` : ''}
           <div id="hiair-profile-accordion">
             ${sections.map((s, i) => accordionSection(s.title, s.content, i === 0, i)).join('')}
           </div>
