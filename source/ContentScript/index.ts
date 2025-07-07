@@ -23,6 +23,215 @@ function checkAshbyJobDescription(): boolean {
   return jobOverview !== null;
 }
 
+// Extract job description from current page
+function extractJobDescription(): string {
+  const hostname = window.location.hostname;
+  
+  if (hostname.includes('ashbyhq.com')) {
+    return extractAshbyJobDescription();
+  }
+  
+  return '';
+}
+
+// Extract job description from Ashby page
+function extractAshbyJobDescription(): string {
+  const jobOverview = document.querySelector('[aria-labelledby="job-overview"]');
+  if (!jobOverview) return '';
+  
+  // Extract text content from the job overview section
+  const textContent = jobOverview.textContent || '';
+  return textContent.trim();
+}
+
+// Clean URL by removing parameters
+function cleanUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    return `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
+  } catch {
+    return url;
+  }
+}
+
+// Get available API key (prioritize OpenAI, fallback to Anthropic)
+async function getAvailableApiKey(): Promise<{ provider: 'openai' | 'anthropic' | null, key: string }> {
+  try {
+    const result = await browser.storage.sync.get('apiKeys');
+    const apiKeys = result.apiKeys || {};
+    
+    if (apiKeys.openai && apiKeys.openai.trim()) {
+      return { provider: 'openai', key: apiKeys.openai.trim() };
+    }
+    
+    if (apiKeys.anthropic && apiKeys.anthropic.trim()) {
+      return { provider: 'anthropic', key: apiKeys.anthropic.trim() };
+    }
+    
+    return { provider: null, key: '' };
+  } catch {
+    return { provider: null, key: '' };
+  }
+}
+
+// Generate cover letter using OpenAI API
+async function generateCoverLetterOpenAI(apiKey: string, jobDescription: string, userProfile: any): Promise<string> {
+  const prompt = createCoverLetterPrompt(jobDescription, userProfile);
+  
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a professional cover letter writer. Write compelling, personalized cover letters that highlight the candidate\'s relevant experience and skills for the specific job opportunity.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 1000,
+      temperature: 0.7
+    })
+  });
+  
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// Generate cover letter using Anthropic API
+async function generateCoverLetterAnthropic(apiKey: string, jobDescription: string, userProfile: any): Promise<string> {
+  const prompt = createCoverLetterPrompt(jobDescription, userProfile);
+  
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 1000,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    })
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Anthropic API error: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  return data.content[0].text;
+}
+
+// Create cover letter prompt
+function createCoverLetterPrompt(jobDescription: string, userProfile: any): string {
+  const education = userProfile.education?.map((edu: any) => 
+    `${edu.degreeType} in ${edu.degreeField} from ${edu.university}`
+  ).join(', ') || '';
+  
+  const experience = userProfile.workExperience?.map((work: any) => 
+    `${work.jobTitle} at ${work.companyName} (${work.startDate} - ${work.endDate})`
+  ).join(', ') || '';
+  
+  return `Write a professional cover letter for the following job opportunity:
+
+JOB DESCRIPTION:
+${jobDescription}
+
+CANDIDATE PROFILE:
+Name: ${userProfile.firstName} ${userProfile.lastName}
+Education: ${education}
+Work Experience: ${experience}
+Skills: ${userProfile.skills || ''}
+Projects: ${userProfile.projects || ''}
+
+Instructions:
+1. Write a compelling cover letter that highlights relevant experience and skills
+2. Match the candidate's background to the job requirements
+3. Use a professional but engaging tone
+4. Keep it concise (3-4 paragraphs)
+5. Include specific examples where possible
+6. End with a strong closing statement
+
+Please write the cover letter now:`;
+}
+
+// Main cover letter generation function
+async function generateCoverLetter(): Promise<string> {
+  try {
+    // Get job description
+    const jobDescription = extractJobDescription();
+    if (!jobDescription) {
+      throw new Error('No job description found on this page');
+    }
+    
+    // Get user profile
+    const result = await browser.storage.sync.get('userProfile');
+    const userProfile = result.userProfile || {};
+    
+    if (!userProfile.firstName || !userProfile.lastName) {
+      throw new Error('Please complete your profile first');
+    }
+    
+    // Get API key
+    const { provider, key } = await getAvailableApiKey();
+    if (!provider || !key) {
+      throw new Error('Please configure your API keys first');
+    }
+    
+    // Generate cover letter
+    let coverLetter: string;
+    if (provider === 'openai') {
+      coverLetter = await generateCoverLetterOpenAI(key, jobDescription, userProfile);
+    } else {
+      coverLetter = await generateCoverLetterAnthropic(key, jobDescription, userProfile);
+    }
+    
+    // Store cover letter with cleaned URL
+    const cleanedUrl = cleanUrl(window.location.href);
+    await storeCoverLetter(cleanedUrl, coverLetter);
+    
+    return coverLetter;
+  } catch (error) {
+    console.error('Error generating cover letter:', error);
+    throw error;
+  }
+}
+
+// Store cover letter mapped to URL
+async function storeCoverLetter(url: string, coverLetter: string): Promise<void> {
+  try {
+    const result = await browser.storage.sync.get('coverLetters');
+    const coverLetters = result.coverLetters || {};
+    
+    coverLetters[url] = {
+      content: coverLetter,
+      createdAt: new Date().toISOString()
+    };
+    
+    await browser.storage.sync.set({ coverLetters });
+  } catch (error) {
+    console.error('Error storing cover letter:', error);
+  }
+}
+
 // Floating button and sidebar logic for Hiair extension
 function createHiairFloatingButton() {
   if (document.getElementById('hiair-floating-btn')) return;
@@ -216,12 +425,66 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
             <span style="background: #ffe0e0; color: #e57373; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin: 0 12px 0 12px; font-size: 18px;">✏️</span>
             <span style="flex:1;">Cover Letter</span>
             ${isJobDescVisible ? 
-              '<button style="background: #e6f7fa; color: #00b6e6; border: none; border-radius: 4px; padding: 4px 12px; font-weight: 600; cursor: pointer; margin-right: 8px; font-size: 14px;">Generate</button>' : 
+              '<button id="generate-cover-letter-btn" style="background: #e6f7fa; color: #00b6e6; border: none; border-radius: 4px; padding: 4px 12px; font-weight: 600; cursor: pointer; margin-right: 8px; font-size: 14px;">Generate</button>' : 
               '<span style="color: #bdbdbd; margin-right: 16px;">No Job Description Found</span>'
             }
           </div>
         </div>
       `;
+    }
+
+    // Setup generate cover letter button event listener
+    function setupGenerateButtonListener(): void {
+      const generateBtn = document.getElementById('generate-cover-letter-btn');
+      if (generateBtn) {
+        generateBtn.addEventListener('click', async () => {
+          const button = generateBtn as HTMLButtonElement;
+          const originalText = button.textContent;
+          
+          try {
+            // Show loading state
+            button.textContent = 'Generating...';
+            button.disabled = true;
+            button.style.background = '#f0f0f0';
+            button.style.color = '#999';
+            
+            // Generate cover letter
+            const coverLetter = await generateCoverLetter();
+            
+            // Show success state
+            button.textContent = 'Generated!';
+            button.style.background = '#e6f7fa';
+            button.style.color = '#00b6e6';
+            
+            // Show cover letter in a modal or alert for now
+            alert('Cover Letter Generated Successfully!\n\n' + coverLetter);
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+              button.textContent = originalText;
+              button.disabled = false;
+              button.style.background = '#e6f7fa';
+              button.style.color = '#00b6e6';
+            }, 2000);
+            
+          } catch (error) {
+            // Show error state
+            button.textContent = 'Error';
+            button.style.background = '#ffe0e0';
+            button.style.color = '#e57373';
+            
+            alert('Error generating cover letter: ' + (error as Error).message);
+            
+            // Reset button after 3 seconds
+            setTimeout(() => {
+              button.textContent = originalText;
+              button.disabled = false;
+              button.style.background = '#e6f7fa';
+              button.style.color = '#00b6e6';
+            }, 3000);
+          }
+        });
+      }
     }
 
     function getProfileFormHTML(profile: any, message: string): string {
@@ -870,7 +1133,11 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
 
     // Set initial content
     const contentDiv = sidebar.querySelector('#hiair-sidebar-content');
-    if (contentDiv) contentDiv.innerHTML = getAutofillContent();
+    if (contentDiv) {
+      contentDiv.innerHTML = getAutofillContent();
+      // Setup generate button listener for initial load
+      setTimeout(() => setupGenerateButtonListener(), 0);
+    }
 
     // Tab switching logic
     const autofillTab = sidebar.querySelector('#hiair-tab-autofill') as HTMLButtonElement;
@@ -885,6 +1152,8 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         apiKeysTab.style.background = '#f5f5f5';
         apiKeysTab.style.color = '#bdbdbd';
         contentDiv.innerHTML = getAutofillContent();
+        // Setup generate button listener after content is added
+        setTimeout(() => setupGenerateButtonListener(), 0);
         // Remove scroll/height styles if present
         (contentDiv as HTMLElement).style.height = '';
         (contentDiv as HTMLElement).style.overflowY = '';
