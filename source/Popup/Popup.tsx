@@ -32,7 +32,6 @@ interface UserProfile {
   otherUrl: string;
   resume: string;
   resumeUploadDate: string;
-  personalDetails: string;
 
   // Education (now an array)
   education: EducationEntry[];
@@ -90,7 +89,6 @@ const Popup: React.FC = () => {
     otherUrl: '',
     resume: '',
     resumeUploadDate: '',
-    personalDetails: '',
     education: [{
       id: '1',
       university: '',
@@ -362,17 +360,6 @@ const Popup: React.FC = () => {
             {formData.resumeUploadDate && (
               <small>Uploaded: {formData.resumeUploadDate}</small>
             )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="personalDetails">Other Personal Details</label>
-            <textarea
-              id="personalDetails"
-              name="personalDetails"
-              value={formData.personalDetails}
-              onChange={handleInputChange}
-              rows={3}
-            />
           </div>
         </AccordionSection>
 

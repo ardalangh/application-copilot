@@ -286,7 +286,6 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
             <label>LinkedIn URL<br/><input name="linkedInUrl" type="url" value="${profile.linkedInUrl || ''}" style="width:100%;padding:6px;" /></label>
             <label>GitHub URL<br/><input name="githubUrl" type="url" value="${profile.githubUrl || ''}" style="width:100%;padding:6px;" /></label>
             <label>Other URL<br/><input name="otherUrl" type="url" value="${profile.otherUrl || ''}" style="width:100%;padding:6px;" /></label>
-            <label>Other Personal Details<br/><textarea name="personalDetails" rows="2" style="width:100%;padding:6px;">${profile.personalDetails || ''}</textarea></label>
           `
         },
         {
@@ -371,8 +370,10 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
       // Compose the form with accordions
       return `
         <form id="hiair-profile-form" style="padding: 0 0 12px 0; display: flex; flex-direction: column; gap: 0;">
-          <div style="font-size: 18px; font-weight: 600; margin: 18px 18px 8px 18px;">Edit Profile</div>
-          ${message ? `<div style='color: #00b6e6; font-size: 14px; margin: 0 18px 16px 18px; display: block;'>${message}</div>` : ''}
+          <div style="margin: 18px 18px 8px 18px;">
+            <div style="font-size: 18px; font-weight: 600;">Edit Profile</div>
+            ${message ? `<div style='color: #00b6e6; font-size: 14px; margin-top: 4px; font-weight: 500;'>${message}</div>` : ''}
+          </div>
           <div id="hiair-profile-accordion">
             ${sections.map((s, i) => accordionSection(s.title, s.content, i === 0, i)).join('')}
           </div>
@@ -385,7 +386,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
     async function renderProfileTab(message: string = ''): Promise<void> {
       // Default profile structure
       let profile: any = {
-        firstName: '', lastName: '', phone: '', portfolio: '', linkedInUrl: '', githubUrl: '', otherUrl: '', resume: '', resumeUploadDate: '', personalDetails: '',
+        firstName: '', lastName: '', phone: '', portfolio: '', linkedInUrl: '', githubUrl: '', otherUrl: '', resume: '', resumeUploadDate: '',
         education: [{ id: '1', university: '', degreeType: '', degreeField: '', startDate: '', endDate: '' }],
         workExperience: [{ id: '1', jobTitle: '', companyName: '', startDate: '', endDate: '', workLocation: '', jobDescription: '' }],
         projects: '', skills: '', gender: '', orientation: '', race: '', relocationWillingness: '', commuteWillingness: '', veteranStatus: '', disabilityStatus: '', expectedSalary: '', sponsorshipRequirements: ''
@@ -519,7 +520,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
               linkedInUrl: formData.get('linkedInUrl') || '',
               githubUrl: formData.get('githubUrl') || '',
               otherUrl: formData.get('otherUrl') || '',
-              personalDetails: formData.get('personalDetails') || '',
+              
               education: newEducation,
               workExperience: newWork,
               projects: formData.get('projects') || '',
