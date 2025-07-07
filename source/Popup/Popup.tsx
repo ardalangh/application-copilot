@@ -25,14 +25,13 @@ interface WorkExperience {
 interface UserProfile {
   // Personal Information
   name: string;
-  contactInfo: string;
+  phone: string;
   portfolio: string;
   linkedInUrl: string;
   githubUrl: string;
   otherUrl: string;
   resume: string;
   resumeUploadDate: string;
-  personalDetails: string;
 
   // Education (now an array)
   education: EducationEntry[];
@@ -83,14 +82,13 @@ const AccordionSection: React.FC<{
 const Popup: React.FC = () => {
   const [formData, setFormData] = React.useState<UserProfile>({
     name: '',
-    contactInfo: '',
+    phone: '',
     portfolio: '',
     linkedInUrl: '',
     githubUrl: '',
     otherUrl: '',
     resume: '',
     resumeUploadDate: '',
-    personalDetails: '',
     education: [{
       id: '1',
       university: '',
@@ -296,12 +294,12 @@ const Popup: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="contactInfo">Contact Information</label>
+            <label htmlFor="phone">Contact Information</label>
             <input
               type="text"
-              id="contactInfo"
-              name="contactInfo"
-              value={formData.contactInfo}
+              id="phone"
+              name="phone"
+              value={formData.phone}
               onChange={handleInputChange}
               placeholder="Email, phone, etc."
             />
@@ -362,17 +360,6 @@ const Popup: React.FC = () => {
             {formData.resumeUploadDate && (
               <small>Uploaded: {formData.resumeUploadDate}</small>
             )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="personalDetails">Other Personal Details</label>
-            <textarea
-              id="personalDetails"
-              name="personalDetails"
-              value={formData.personalDetails}
-              onChange={handleInputChange}
-              rows={3}
-            />
           </div>
         </AccordionSection>
 
@@ -704,7 +691,7 @@ const Popup: React.FC = () => {
           <form onSubmit={handleApiKeysSave} className="api-keys-form">
             <div className="form-group api-key-group">
               <img src={
-                browser.runtime.getURL('openailogo.png')
+                browser.runtime.getURL('/assets/icons/openailogo.png')
               } alt="OpenAI Logo" className="api-logo" />
               <input
                 type="password"
@@ -717,7 +704,7 @@ const Popup: React.FC = () => {
             </div>
             <div className="form-group api-key-group">
               <img src={
-                browser.runtime.getURL('anthropiclogo.png')
+                browser.runtime.getURL('/assets/icons/anthropiclogo.png')
               } alt="Anthropic Logo" className="api-logo" />
               <input
                 type="password"
