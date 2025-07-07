@@ -25,7 +25,7 @@ interface WorkExperience {
 interface UserProfile {
   // Personal Information
   name: string;
-  contactInfo: string;
+  phone: string;
   portfolio: string;
   linkedInUrl: string;
   githubUrl: string;
@@ -83,7 +83,7 @@ const AccordionSection: React.FC<{
 const Popup: React.FC = () => {
   const [formData, setFormData] = React.useState<UserProfile>({
     name: '',
-    contactInfo: '',
+    phone: '',
     portfolio: '',
     linkedInUrl: '',
     githubUrl: '',
@@ -296,12 +296,12 @@ const Popup: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="contactInfo">Contact Information</label>
+            <label htmlFor="phone">Contact Information</label>
             <input
               type="text"
-              id="contactInfo"
-              name="contactInfo"
-              value={formData.contactInfo}
+              id="phone"
+              name="phone"
+              value={formData.phone}
               onChange={handleInputChange}
               placeholder="Email, phone, etc."
             />

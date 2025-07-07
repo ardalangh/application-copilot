@@ -156,6 +156,8 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
       border: 1px solid #e5e7eb;
       display: flex;
       flex-direction: column;
+      height: auto;
+      max-height: 90vh;
     `;
 
     sidebar.innerHTML = `
@@ -278,7 +280,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
               <label>First Name*<br/><input name="firstName" type="text" value="${profile.firstName || ''}" required /></label>
               <label>Last Name*<br/><input name="lastName" type="text" value="${profile.lastName || ''}" required /></label>
             </div>
-            <label>Contact Info<br/><input name="contactInfo" type="text" value="${profile.contactInfo || ''}" style="width:100%;padding:6px;" /></label>
+            <label>Phone number<br/><input name="phone" type="text" value="${profile.phone || ''}" style="width:100%;padding:6px;" /></label>
             <label>Portfolio<br/><input name="portfolio" type="url" value="${profile.portfolio || ''}" style="width:100%;padding:6px;" /></label>
             <label>LinkedIn URL<br/><input name="linkedInUrl" type="url" value="${profile.linkedInUrl || ''}" style="width:100%;padding:6px;" /></label>
             <label>GitHub URL<br/><input name="githubUrl" type="url" value="${profile.githubUrl || ''}" style="width:100%;padding:6px;" /></label>
@@ -382,7 +384,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
     async function renderProfileTab(message: string = ''): Promise<void> {
       // Default profile structure
       let profile: any = {
-        firstName: '', lastName: '', contactInfo: '', portfolio: '', linkedInUrl: '', githubUrl: '', otherUrl: '', resume: '', resumeUploadDate: '', personalDetails: '',
+        firstName: '', lastName: '', phone: '', portfolio: '', linkedInUrl: '', githubUrl: '', otherUrl: '', resume: '', resumeUploadDate: '', personalDetails: '',
         education: [{ id: '1', university: '', degreeType: '', degreeField: '', startDate: '', endDate: '' }],
         workExperience: [{ id: '1', jobTitle: '', companyName: '', startDate: '', endDate: '', workLocation: '', jobDescription: '' }],
         projects: '', skills: '', gender: '', orientation: '', race: '', relocationWillingness: '', commuteWillingness: '', veteranStatus: '', disabilityStatus: '', expectedSalary: '', sponsorshipRequirements: ''
@@ -403,6 +405,13 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         }
       } catch {}
       if (contentDiv) contentDiv.innerHTML = getProfileFormHTML(profile, message);
+      // Ensure scroll/height styles for profile tab (in case of direct render)
+      if (contentDiv && sidebar) {
+        (sidebar as HTMLElement).style.height = '100vh';
+        (sidebar as HTMLElement).style.maxHeight = '100vh';
+        (contentDiv as HTMLElement).style.height = 'calc(100vh - 70px)'; // 70px for header/tabs
+        (contentDiv as HTMLElement).style.overflowY = 'auto';
+      }
       // Accordion logic
       const accordionHeaders = contentDiv?.querySelectorAll('.hiair-accordion-header');
       accordionHeaders?.forEach((header) => {
@@ -504,7 +513,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
               ...profile,
               firstName: formData.get('firstName') || '',
               lastName: formData.get('lastName') || '',
-              contactInfo: formData.get('contactInfo') || '',
+              phone: formData.get('phone') || '',
               portfolio: formData.get('portfolio') || '',
               linkedInUrl: formData.get('linkedInUrl') || '',
               githubUrl: formData.get('githubUrl') || '',
@@ -639,6 +648,11 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         apiKeysTab.style.background = '#f5f5f5';
         apiKeysTab.style.color = '#bdbdbd';
         contentDiv.innerHTML = autofillContent;
+        // Remove scroll/height styles if present
+        (contentDiv as HTMLElement).style.height = '';
+        (contentDiv as HTMLElement).style.overflowY = '';
+        (sidebar as HTMLElement).style.height = 'auto';
+        (sidebar as HTMLElement).style.maxHeight = '90vh';
       });
       profileTab.addEventListener('click', () => {
         profileTab.style.background = '#e6f7fa';
@@ -648,6 +662,13 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         apiKeysTab.style.background = '#f5f5f5';
         apiKeysTab.style.color = '#bdbdbd';
         renderProfileTab();
+        // Ensure scroll/height styles for profile tab
+        setTimeout(() => {
+          (sidebar as HTMLElement).style.height = '100vh';
+          (sidebar as HTMLElement).style.maxHeight = '100vh';
+          (contentDiv as HTMLElement).style.height = 'calc(100vh - 70px)'; // 70px for header/tabs
+          (contentDiv as HTMLElement).style.overflowY = 'auto';
+        }, 0);
       });
       apiKeysTab.addEventListener('click', () => {
         apiKeysTab.style.background = '#e6f7fa';
@@ -657,6 +678,11 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         profileTab.style.background = '#f5f5f5';
         profileTab.style.color = '#bdbdbd';
         renderApiKeysTab();
+        // Remove scroll/height styles if present
+        (contentDiv as HTMLElement).style.height = '';
+        (contentDiv as HTMLElement).style.overflowY = '';
+        (sidebar as HTMLElement).style.height = 'auto';
+        (sidebar as HTMLElement).style.maxHeight = '90vh';
       });
     }
 
