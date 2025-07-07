@@ -158,6 +158,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
       flex-direction: column;
       height: auto;
       max-height: 90vh;
+      bottom: 20px;
     `;
 
     sidebar.innerHTML = `
@@ -407,9 +408,9 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
       if (contentDiv) contentDiv.innerHTML = getProfileFormHTML(profile, message);
       // Ensure scroll/height styles for profile tab (in case of direct render)
       if (contentDiv && sidebar) {
-        (sidebar as HTMLElement).style.height = '100vh';
-        (sidebar as HTMLElement).style.maxHeight = '100vh';
-        (contentDiv as HTMLElement).style.height = 'calc(100vh - 70px)'; // 70px for header/tabs
+        (sidebar as HTMLElement).style.height = 'calc(100vh - 40px)'; // 20px top + 20px bottom
+        (sidebar as HTMLElement).style.maxHeight = 'calc(100vh - 40px)';
+        (contentDiv as HTMLElement).style.height = 'calc(100vh - 40px - 70px)'; // 40px margin, 70px header/tabs
         (contentDiv as HTMLElement).style.overflowY = 'auto';
       }
       // Accordion logic
@@ -664,9 +665,9 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         renderProfileTab();
         // Ensure scroll/height styles for profile tab
         setTimeout(() => {
-          (sidebar as HTMLElement).style.height = '100vh';
-          (sidebar as HTMLElement).style.maxHeight = '100vh';
-          (contentDiv as HTMLElement).style.height = 'calc(100vh - 70px)'; // 70px for header/tabs
+          (sidebar as HTMLElement).style.height = 'calc(100vh - 40px)';
+          (sidebar as HTMLElement).style.maxHeight = 'calc(100vh - 40px)';
+          (contentDiv as HTMLElement).style.height = 'calc(100vh - 40px - 70px)';
           (contentDiv as HTMLElement).style.overflowY = 'auto';
         }, 0);
       });
