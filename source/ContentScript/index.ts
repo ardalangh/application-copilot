@@ -270,6 +270,18 @@ async function storeCoverLetter(
   }
 }
 
+// Helper to extract pure JS from LLM output (removes markdown code blocks)
+function extractPureJSFromLLMOutput(output: string): string {
+  // Remove markdown code block markers and explanations
+  // e.g. ```js ... ```
+  const codeBlockMatch = output.match(/```(?:javascript|js)?([\s\S]*?)```/i);
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim();
+  }
+  // Otherwise, return the output as-is
+  return output.trim();
+}
+
 // Generate autofill script using LLM
 async function generateAutofillScriptWithLLM(html: string): Promise<string> {
   // Get API key
@@ -660,6 +672,13 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
             const html = document.body.innerHTML;
             const script = await generateAutofillScriptWithLLM(html);
             console.log(script);
+            try {
+              const pureScript = extractPureJSFromLLMOutput(script);
+              // eslint-disable-next-line no-eval
+              eval(pureScript);
+            } catch (e) {
+              console.error('Error executing autofill script:', e);
+            }
             autofillBtn.textContent = 'Generated!';
             autofillBtn.style.background = '#e6f7fa';
             autofillBtn.style.color = '#00b6e6';
