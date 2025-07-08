@@ -270,6 +270,57 @@ async function storeCoverLetter(
   }
 }
 
+// Generate autofill script using LLM
+async function generateAutofillScriptWithLLM(html: string): Promise<string> {
+  // Get API key
+  const { provider, key } = await getAvailableApiKey();
+  if (!provider || !key) {
+    throw new Error('Please configure your API keys first');
+  }
+
+  const prompt = `You are a browser automation expert. Given the following HTML of a job application page, generate a JavaScript snippet that fills in all visible form fields (text, email, textarea, select, radio, checkbox) with realistic dummy data. Do not submit the form or click any final submit buttons. Only fill the fields. Output only the JavaScript code, no explanations.\n\nHTML:\n${html}`;
+
+  if (provider === 'openai') {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are a helpful coding assistant.' },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: 1000,
+        temperature: 0.3,
+      }),
+    });
+    if (!response.ok) throw new Error('OpenAI API error: ' + response.status);
+    const data = await response.json();
+    return data.choices[0].message.content.trim();
+  } else {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 1000,
+        messages: [
+          { role: 'user', content: prompt },
+        ],
+      }),
+    });
+    if (!response.ok) throw new Error('Anthropic API error: ' + response.status);
+    const data = await response.json();
+    return data.content[0].text.trim();
+  }
+}
 
 // Floating button and sidebar logic for Hiair extension
 function createHiairFloatingButton() {
@@ -596,8 +647,40 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         btn.textContent?.includes('⚡ Autofill') || btn.textContent?.includes('Autofill')
       );
       if (autofillBtn) {
-        autofillBtn.addEventListener('click', () => {
-          console.log('hello');
+        autofillBtn.addEventListener('click', async () => {
+          // Add loading indicator
+          const originalText = autofillBtn.textContent;
+          autofillBtn.textContent = 'Generating...';
+          autofillBtn.disabled = true;
+          autofillBtn.style.background = '#f0f0f0';
+          autofillBtn.style.color = '#999';
+          // Optionally, add a spinner
+          // autofillBtn.innerHTML = '<span class="spinner"></span> Generating...';
+          try {
+            const html = document.body.innerHTML;
+            const script = await generateAutofillScriptWithLLM(html);
+            console.log(script);
+            autofillBtn.textContent = 'Generated!';
+            autofillBtn.style.background = '#e6f7fa';
+            autofillBtn.style.color = '#00b6e6';
+            setTimeout(() => {
+              autofillBtn.textContent = originalText;
+              autofillBtn.disabled = false;
+              autofillBtn.style.background = '#e6f7fa';
+              autofillBtn.style.color = '#00b6e6';
+            }, 2000);
+          } catch (err) {
+            autofillBtn.textContent = 'Error';
+            autofillBtn.style.background = '#ffe0e0';
+            autofillBtn.style.color = '#e57373';
+            console.error('Error generating autofill script:', err);
+            setTimeout(() => {
+              autofillBtn.textContent = originalText;
+              autofillBtn.disabled = false;
+              autofillBtn.style.background = '#e6f7fa';
+              autofillBtn.style.color = '#00b6e6';
+            }, 3000);
+          }
         });
       }
     }
