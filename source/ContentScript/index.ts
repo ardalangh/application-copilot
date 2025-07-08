@@ -290,7 +290,7 @@ async function generateAutofillScriptWithLLM(html: string): Promise<string> {
     throw new Error('Please configure your API keys first');
   }
 
-  const prompt = `You are a browser automation expert. Given the following HTML of a job application page, generate a JavaScript snippet that fills in all visible form fields (text, email, textarea, select, radio, checkbox) with realistic dummy data. Do not submit the form or click any final submit buttons. Only fill the fields. Output only the JavaScript code, no explanations.\n\nHTML:\n${html}`;
+  const prompt = `You are a browser automation expert. Given the following HTML of a job application page, generate a JavaScript snippet that fills in all visible form fields (text, email, textarea, select, radio, checkbox) with realistic dummy data. Do not submit the form or click any final submit buttons. Only fill the fields. Do NOT use document.addEventListener('DOMContentLoaded', ...) or any similar wrappers; assume the script runs immediately. Output only the JavaScript code, no explanations.\n\nHTML:\n${html}`;
 
   if (provider === 'openai') {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
