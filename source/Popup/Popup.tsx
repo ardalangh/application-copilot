@@ -89,23 +89,27 @@ const Popup: React.FC = () => {
     otherUrl: '',
     resume: '',
     resumeUploadDate: '',
-    education: [{
-      id: '1',
-      university: '',
-      degreeType: '',
-      degreeField: '',
-      startDate: '',
-      endDate: ''
-    }],
-    workExperience: [{
-      id: '1',
-      jobTitle: '',
-      companyName: '',
-      startDate: '',
-      endDate: '',
-      workLocation: '',
-      jobDescription: ''
-    }],
+    education: [
+      {
+        id: '1',
+        university: '',
+        degreeType: '',
+        degreeField: '',
+        startDate: '',
+        endDate: '',
+      },
+    ],
+    workExperience: [
+      {
+        id: '1',
+        jobTitle: '',
+        companyName: '',
+        startDate: '',
+        endDate: '',
+        workLocation: '',
+        jobDescription: '',
+      },
+    ],
     projects: '',
     skills: '',
     gender: '',
@@ -116,131 +120,159 @@ const Popup: React.FC = () => {
     veteranStatus: '',
     disabilityStatus: '',
     expectedSalary: '',
-    sponsorshipRequirements: ''
+    sponsorshipRequirements: '',
   });
-
   const [isLoading, setIsLoading] = React.useState(false);
   const [message, setMessage] = React.useState('');
-
-  const [apiKeys, setApiKeys] = React.useState<{ openai: string; anthropic: string }>({ openai: '', anthropic: '' });
+  const [apiKeys, setApiKeys] = React.useState<{ openai: string; anthropic: string }>(
+    { openai: '', anthropic: '' }
+  );
   const [apiMessage, setApiMessage] = React.useState('');
+
+  const loadUserProfile = React.useCallback(async (): Promise<void> => {
+    try {
+      const [result, localResult] = await Promise.all([
+        browser.storage.sync.get('userProfile'),
+        browser.storage.local.get('resumeData'),
+      ]);
+      const mergedProfile = result.userProfile
+        ? { ...formData, ...result.userProfile }
+        : { ...formData };
+      if (localResult.resumeData) {
+        mergedProfile.resume = localResult.resumeData.resume || '';
+        mergedProfile.resumeUploadDate = localResult.resumeData.resumeUploadDate || '';
+      }
+      setFormData(mergedProfile);
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    }
+  }, [formData]);
+
+  const loadApiKeys = React.useCallback(async (): Promise<void> => {
+    try {
+      const result = await browser.storage.sync.get('apiKeys');
+      if (result.apiKeys) setApiKeys(result.apiKeys);
+    } catch (e) {
+      /* ignore */
+    }
+  }, []);
 
   React.useEffect(() => {
     loadUserProfile();
     loadApiKeys();
-  }, []);
+  }, [loadUserProfile, loadApiKeys]);
 
-  const loadUserProfile = async () => {
-    try {
-      const result = await browser.storage.sync.get('userProfile');
-      if (result.userProfile) {
-        setFormData(result.userProfile);
-      }
-    } catch (error) {
-      console.error('Error loading user profile:', error);
-    }
-  };
-
-  const loadApiKeys = async () => {
-    try {
-      const result = await browser.storage.sync.get('apiKeys');
-      if (result.apiKeys) setApiKeys(result.apiKeys);
-    } catch (e) { /* ignore */ }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ): void => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const handleEducationChange = (id: string, field: keyof EducationEntry, value: string) => {
-    setFormData(prev => ({
+  const handleEducationChange = (
+    id: string,
+    field: keyof EducationEntry,
+    value: string
+  ): void => {
+    setFormData((prev) => ({
       ...prev,
-      education: prev.education.map(edu =>
+      education: prev.education.map((edu) =>
         edu.id === id ? { ...edu, [field]: value } : edu
-      )
+      ),
     }));
   };
 
-  const handleWorkExperienceChange = (id: string, field: keyof WorkExperience, value: string) => {
-    setFormData(prev => ({
+  const handleWorkExperienceChange = (
+    id: string,
+    field: keyof WorkExperience,
+    value: string
+  ): void => {
+    setFormData((prev) => ({
       ...prev,
-      workExperience: prev.workExperience.map(work =>
+      workExperience: prev.workExperience.map((work) =>
         work.id === id ? { ...work, [field]: value } : work
-      )
+      ),
     }));
   };
 
-  const addEducationEntry = () => {
+  const addEducationEntry = (): void => {
     const newId = Date.now().toString();
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      education: [...prev.education, {
-        id: newId,
-        university: '',
-        degreeType: '',
-        degreeField: '',
-        startDate: '',
-        endDate: ''
-      }]
+      education: [
+        ...prev.education,
+        {
+          id: newId,
+          university: '',
+          degreeType: '',
+          degreeField: '',
+          startDate: '',
+          endDate: '',
+        },
+      ],
     }));
   };
 
-  const removeEducationEntry = (id: string) => {
-    setFormData(prev => ({
+  const removeEducationEntry = (id: string): void => {
+    setFormData((prev) => ({
       ...prev,
-      education: prev.education.filter(edu => edu.id !== id)
+      education: prev.education.filter((edu) => edu.id !== id),
     }));
   };
 
-  const addWorkExperienceEntry = () => {
+  const addWorkExperienceEntry = (): void => {
     const newId = Date.now().toString();
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      workExperience: [...prev.workExperience, {
-        id: newId,
-        jobTitle: '',
-        companyName: '',
-        startDate: '',
-        endDate: '',
-        workLocation: '',
-        jobDescription: ''
-      }]
+      workExperience: [
+        ...prev.workExperience,
+        {
+          id: newId,
+          jobTitle: '',
+          companyName: '',
+          startDate: '',
+          endDate: '',
+          workLocation: '',
+          jobDescription: '',
+        },
+      ],
     }));
   };
 
-  const removeWorkExperienceEntry = (id: string) => {
-    setFormData(prev => ({
+  const removeWorkExperienceEntry = (id: string): void => {
+    setFormData((prev) => ({
       ...prev,
-      workExperience: prev.workExperience.filter(work => work.id !== id)
+      workExperience: prev.workExperience.filter((work) => work.id !== id),
     }));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result as string;
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           resume: result,
-          resumeUploadDate: new Date().toISOString().split('T')[0]
+          resumeUploadDate: new Date().toISOString().split('T')[0],
         }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
     setApiKeys((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleApiKeysSave = async (e: React.FormEvent) => {
+  const handleApiKeysSave = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     try {
       await browser.storage.sync.set({ apiKeys });
@@ -251,13 +283,18 @@ const Popup: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setIsLoading(true);
     setMessage('');
 
     try {
-      await browser.storage.sync.set({ userProfile: formData });
+      // Split resume fields to local storage
+      const { resume, resumeUploadDate, ...profileToSync } = formData;
+      await browser.storage.sync.set({ userProfile: profileToSync });
+      if (resume) {
+        await browser.storage.local.set({ resumeData: { resume, resumeUploadDate } });
+      }
       setMessage('Profile saved successfully!');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {

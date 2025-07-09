@@ -1210,32 +1210,41 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
             try {
               const reader = new FileReader();
               reader.onload = async (e) => {
-                profile.resume = e.target?.result as string;
-                profile.resumeUploadDate = new Date().toLocaleDateString();
-                await saveProfileData(profile);
+                const resumeData = {
+                  resume: e.target?.result as string,
+                  resumeUploadDate: new Date().toLocaleDateString(),
+                };
+                await saveProfileData(profile, resumeData);
               };
               reader.readAsDataURL(resumeFile);
             } catch (error) {
-              await saveProfileData(profile);
+              await saveProfileData(profile, null);
             }
           } else {
-            await saveProfileData(profile);
+            await saveProfileData(profile, null);
           }
         });
       }
     }
 
-    // Save profile data to storage
-    async function saveProfileData(profile: any): Promise<void> {
+    // Save profile data to storage (split resume to local)
+    async function saveProfileData(profile: any, resumeData: {resume: string, resumeUploadDate: string} | null): Promise<void> {
       try {
-        await browser.storage.sync.set({ userProfile: profile });
+        // Remove resume fields from profile before saving to sync
+        const profileToSync = { ...profile };
+        delete profileToSync.resume;
+        delete profileToSync.resumeUploadDate;
+        await browser.storage.sync.set({ userProfile: profileToSync });
+        if (resumeData) {
+          await browser.storage.local.set({ resumeData });
+        }
         renderProfileTab("Profile saved successfully!");
       } catch (error) {
         renderProfileTab("Error saving profile. Please try again.");
       }
     }
 
-    // Profile tab logic
+    // Profile tab logic (merge resume from local)
     async function renderProfileTab(message: string = ""): Promise<void> {
       // Default profile structure
       let profile: any = {
@@ -1282,46 +1291,53 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         sponsorshipRequirements: "",
       };
       try {
-        const result = await browser.storage.sync.get("userProfile");
+        const [result, localResult] = await Promise.all([
+          browser.storage.sync.get("userProfile"),
+          browser.storage.local.get("resumeData"),
+        ]);
         if (result.userProfile) {
           profile = { ...profile, ...result.userProfile };
-          // Migrate old 'name' field if present
-          if (!profile.firstName && !profile.lastName && profile.name) {
-            const parts = profile.name.split(" ");
-            profile.firstName = parts[0] || "";
-            profile.lastName = parts.slice(1).join(" ") || "";
-          }
-          // Ensure arrays are present
-          if (
-            !Array.isArray(profile.education) ||
-            profile.education.length === 0
-          )
-            profile.education = [
-              {
-                id: "1",
-                university: "",
-                degreeType: "",
-                degreeField: "",
-                startDate: "",
-                endDate: "",
-              },
-            ];
-          if (
-            !Array.isArray(profile.workExperience) ||
-            profile.workExperience.length === 0
-          )
-            profile.workExperience = [
-              {
-                id: "1",
-                jobTitle: "",
-                companyName: "",
-                startDate: "",
-                endDate: "",
-                workLocation: "",
-                jobDescription: "",
-              },
-            ];
         }
+        if (localResult.resumeData) {
+          profile.resume = localResult.resumeData.resume || "";
+          profile.resumeUploadDate = localResult.resumeData.resumeUploadDate || "";
+        }
+        // Migrate old 'name' field if present
+        if (!profile.firstName && !profile.lastName && profile.name) {
+          const parts = profile.name.split(" ");
+          profile.firstName = parts[0] || "";
+          profile.lastName = parts.slice(1).join(" ") || "";
+        }
+        // Ensure arrays are present
+        if (
+          !Array.isArray(profile.education) ||
+          profile.education.length === 0
+        )
+          profile.education = [
+            {
+              id: "1",
+              university: "",
+              degreeType: "",
+              degreeField: "",
+              startDate: "",
+              endDate: "",
+            },
+          ];
+        if (
+          !Array.isArray(profile.workExperience) ||
+          profile.workExperience.length === 0
+        )
+          profile.workExperience = [
+            {
+              id: "1",
+              jobTitle: "",
+              companyName: "",
+              startDate: "",
+              endDate: "",
+              workLocation: "",
+              jobDescription: "",
+            },
+          ];
       } catch {}
       if (contentDiv)
         contentDiv.innerHTML = getProfileFormHTML(profile, message);
