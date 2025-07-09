@@ -538,7 +538,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
           <div style="display: flex; align-items: center; padding: 14px 0 14px 0; border-bottom: 1px solid #ececec;">
             <span style="background: #f3e8ff; color: #b39ddb; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin: 0 12px 0 12px; font-size: 18px;">📄</span>
             <span style="flex:1;">Resume</span>
-            <span style="color: #00b6e6; font-weight: 500; cursor: pointer; margin-right: 16px;">Preview</span>
+            <span id="hiair-preview-resume-btn" style="color: #00b6e6; font-weight: 500; cursor: pointer; margin-right: 16px;">Preview</span>
           </div>
           <div style="display: flex; align-items: center; padding: 14px 0 14px 0; border-bottom: 1px solid #ececec;">
             <span style="background: #ffe0e0; color: #e57373; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin: 0 12px 0 12px; font-size: 18px;">✏️</span>
@@ -581,6 +581,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
         setupCoverLetterAccordionListeners();
       }
     }
+
 
     // Setup cover letter accordion listeners
     function setupCoverLetterAccordionListeners(): void {
@@ -649,6 +650,97 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
       }
     }
 
+    // Setup resume preview button event listener
+    function setupResumePreviewButtonListener(): void {
+      const previewBtn = document.getElementById("hiair-preview-resume-btn");
+      if (previewBtn) {
+        previewBtn.addEventListener("click", async () => {
+          try {
+            // Get resume data from both sync and local storage
+            const [syncResult, localResult] = await Promise.all([
+              browser.storage.sync.get("userProfile"),
+              browser.storage.local.get("resumeData")
+            ]);
+            
+            let resumeData = null;
+            
+            // Check local storage first (newer format)
+            if (localResult.resumeData && localResult.resumeData.resume) {
+              resumeData = localResult.resumeData;
+            }
+            // Fallback to sync storage (older format)
+            else if (syncResult.userProfile && syncResult.userProfile.resume) {
+              resumeData = {
+                resume: syncResult.userProfile.resume,
+                resumeUploadDate: syncResult.userProfile.resumeUploadDate
+              };
+            }
+            
+            if (!resumeData || !resumeData.resume) {
+              alert("No resume found. Please upload a resume in the Profile tab.");
+              return;
+            }
+
+            // Create a new window/tab to display the resume
+            const newWindow = window.open("", "_blank", "width=800,height=600");
+            if (newWindow) {
+              // Check if it's a PDF (data URL starts with data:application/pdf)
+              if (resumeData.resume.startsWith("data:application/pdf")) {
+                // For PDF files, embed in an iframe
+                newWindow.document.write(`
+                  <!DOCTYPE html>
+                  <html>
+                    <head>
+                      <title>Resume Preview</title>
+                      <style>
+                        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+                        .header { text-align: center; margin-bottom: 20px; }
+                        iframe { width: 100%; height: calc(100vh - 100px); border: none; }
+                      </style>
+                    </head>
+                    <body>
+                      <div class="header">
+                        <h2>Resume Preview</h2>
+                        <p>Uploaded: ${resumeData.resumeUploadDate || "Unknown"}</p>
+                      </div>
+                      <iframe src="${resumeData.resume}" type="application/pdf"></iframe>
+                    </body>
+                  </html>
+                `);
+              } else {
+                // For other file types, show as image or text
+                newWindow.document.write(`
+                  <!DOCTYPE html>
+                  <html>
+                    <head>
+                      <title>Resume Preview</title>
+                      <style>
+                        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; text-align: center; }
+                        .header { margin-bottom: 20px; }
+                        img { max-width: 100%; height: auto; border: 1px solid #ccc; }
+                      </style>
+                    </head>
+                    <body>
+                      <div class="header">
+                        <h2>Resume Preview</h2>
+                        <p>Uploaded: ${resumeData.resumeUploadDate || "Unknown"}</p>
+                      </div>
+                      <img src="${resumeData.resume}" alt="Resume" />
+                    </body>
+                  </html>
+                `);
+              }
+              newWindow.document.close();
+            } else {
+              alert("Unable to open preview window. Please check your browser's popup settings.");
+            }
+          } catch (error) {
+            console.error("Error previewing resume:", error);
+            alert("Error loading resume preview.");
+          }
+        });
+      }
+    }
 
     // Setup autofill button event listener
     function setupAutofillButtonListener(): void {
@@ -1513,6 +1605,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
           setupGenerateButtonListener();
           setupCoverLetterAccordionListeners();
           setupAutofillButtonListener();
+          setupResumePreviewButtonListener();
         }, 0);
       });
       // Apply full height styles for initial autofill tab
@@ -1549,6 +1642,7 @@ function createHiairSidebar(onClose: (() => void) | undefined) {
             setupGenerateButtonListener();
             setupCoverLetterAccordionListeners();
             setupAutofillButtonListener();
+            setupResumePreviewButtonListener();
           }, 0);
         });
         // Remove scroll/height styles if present

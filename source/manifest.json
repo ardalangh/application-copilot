@@ -65,7 +65,8 @@
 
   "content_scripts": [{
     "matches": [
-      "*://*.ashbyhq.com/*"
+      "*://*.ashbyhq.com/*",
+      "*://*.linkedin.com/*"
     ],
     "js": [
       "js/contentScript.bundle.js"
